@@ -6,12 +6,13 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -126,6 +127,9 @@ val StageContentTop = 110.mpx
  * item (Wide and up) and [detail] the line under its name (Extra wide), null for none. [length] Full
  * runs the rail the height of the screen. Entering the rail from the content always lands on the
  * selected section, and ▶ out of it returns to exactly where the content was ([contentFocusRequester]).
+ * The items scroll vertically when the screen cannot show them all — a phone in landscape, or a large
+ * text size — with the brand and the profile held in place; a focus move to an off-screen item scrolls
+ * it back into view, so the D-pad and a finger both reach every section.
  */
 @Composable
 fun StageRail(
@@ -159,6 +163,8 @@ fun StageRail(
     val full = length == NavLength.FULL
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val scope = rememberCoroutineScope()
+    // Held here, not in the list, so a resize (capsule → open) keeps the reader's place.
+    val railScroll = rememberScrollState()
     var hasFocus by remember { mutableStateOf(false) }
     // Search, Settings and More all land on a rail item: Search has its own, Settings lives behind More.
     val focusSection = when {
@@ -282,36 +288,48 @@ fun StageRail(
             verticalArrangement = Arrangement.spacedBy(6.mpx),
         ) {
             RailBrand(shown, namesAlpha)
-            if (nowPlaying != null) {
-                RailItem(
-                    icon = if (nowPlaying.audioMode) OwnTVIcon.EQ else OwnTVIcon.PLAY,
-                    label = stringResource(R.string.shell_now_playing),
-                    trailing = if (nowPlaying.audioMode && counts) stringResource(R.string.shell_now_playing_audio) else null,
-                    detail = null,
-                    open = shown,
-                    namesAlpha = namesAlpha,
-                    active = false,
-                    accentIcon = true,
-                    onClick = onNowPlaying,
-                )
-                RailSeparator(shown)
+            // The destinations scroll when the screen cannot hold them all — a phone in landscape, or
+            // every section shown at a large text size. The brand above and the profile below stay put:
+            // scrolling the whole rail would carry away the only way back to the profile. FULL hands
+            // this list every spare pixel so the profile sits at the bottom; FIT lets it stay as tall
+            // as its items, up to whatever height the screen leaves it.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = full)
+                    .verticalScroll(railScroll),
+                horizontalAlignment = if (shown) Alignment.Start else Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.mpx),
+            ) {
+                if (nowPlaying != null) {
+                    RailItem(
+                        icon = if (nowPlaying.audioMode) OwnTVIcon.EQ else OwnTVIcon.PLAY,
+                        label = stringResource(R.string.shell_now_playing),
+                        trailing = if (nowPlaying.audioMode && counts) stringResource(R.string.shell_now_playing_audio) else null,
+                        detail = null,
+                        open = shown,
+                        namesAlpha = namesAlpha,
+                        active = false,
+                        accentIcon = true,
+                        onClick = onNowPlaying,
+                    )
+                    RailSeparator(shown)
+                }
+                items.forEach { section ->
+                    RailItem(
+                        icon = section.stageIcon,
+                        label = stringResource(section.labelRes),
+                        trailing = if (counts) count(section)?.let { NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0]).format(it) } else null,
+                        detail = if (details) detail(section) else null,
+                        open = shown,
+                        namesAlpha = namesAlpha,
+                        active = section == selected ||
+                            (section == MainSection.MORE && selected == MainSection.SETTINGS),
+                        onClick = { onSelect(section) },
+                        modifier = if (section == focusSection) Modifier.focusRequester(selectedItemFocusRequester) else Modifier,
+                    )
+                }
             }
-            items.forEach { section ->
-                RailItem(
-                    icon = section.stageIcon,
-                    label = stringResource(section.labelRes),
-                    trailing = if (counts) count(section)?.let { NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0]).format(it) } else null,
-                    detail = if (details) detail(section) else null,
-                    open = shown,
-                    namesAlpha = namesAlpha,
-                    active = section == selected ||
-                        (section == MainSection.MORE && selected == MainSection.SETTINGS),
-                    onClick = { onSelect(section) },
-                    modifier = if (section == focusSection) Modifier.focusRequester(selectedItemFocusRequester) else Modifier,
-                )
-            }
-            // Full height: the profile sits at the bottom, after the last separator.
-            if (full) Spacer(Modifier.weight(1f))
             RailSeparator(shown)
             RailProfile(shown, namesAlpha, profileName, profileLine.takeIf { counts }, avatarId, avatarPath, onSwitchProfile, onPickAvatar)
         }

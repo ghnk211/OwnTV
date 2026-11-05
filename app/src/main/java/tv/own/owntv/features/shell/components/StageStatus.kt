@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,17 +27,10 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
-import tv.own.owntv.R
-import tv.own.owntv.core.settings.ClockColors
-import tv.own.owntv.core.weather.WeatherInfo
-import androidx.compose.runtime.staticCompositionLocalOf
-import tv.own.owntv.ui.theme.parseAccentHex
-import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.stage.StagePill
 import tv.own.owntv.ui.theme.StageColors
@@ -54,7 +46,7 @@ data class ContinuePill(val icon: OwnTVIcon, val iconFilled: Boolean, val action
 /**
  * The top-right cluster on every screen: the Continue pill —
  * or, in Audio mode, the now-playing bar in its place — the playlist pill, then the clock with the date
- * and weather below it. Placed by the shell at the top right, 64 × 34 from the corner.
+ * below it. Placed by the shell at the top right, 64 × 34 from the corner.
  *
  * [pillsFocusable] keeps the pills out of D-pad reach while focus is deep in a content list, so an
  * up-press at the top of a list never jumps here. [onPlaylistPillBounds] reports the playlist pill's
@@ -68,9 +60,6 @@ fun StageStatusCluster(
     playlistInteractive: Boolean,
     onPlaylistClick: () -> Unit,
     pillsFocusable: Boolean,
-    weatherInfo: WeatherInfo?,
-    weatherFahrenheit: Boolean,
-    clockColors: ClockColors,
     modifier: Modifier = Modifier,
     playlistDownFocusRequester: FocusRequester? = null,
     onPlaylistPillBounds: (Rect) -> Unit = {},
@@ -108,30 +97,17 @@ fun StageStatusCluster(
                     },
             )
         }
-        StageClock(weatherInfo, weatherFahrenheit, clockColors)
+        StageClock()
     }
 }
 
-/** The shell's weather and °F choice, for the clock preview on Settings › Date, time & weather. */
-val LocalClockWeather = staticCompositionLocalOf<Pair<WeatherInfo?, Boolean>> { null to false }
-
-/** A stored clock colour: blank = [default], "accent" = the accent, else the hex code. */
-@Composable
-fun clockColor(stored: String, default: Color): Color = when (stored) {
-    "" -> default
-    ClockColors.ACCENT -> stageAccent.accent
-    else -> parseAccentHex(stored) ?: default
-}
-
 /**
- * `.status .clk` 40/700 tabular, and "Tue 29 Sep · ☀ 26° Düsseldorf" 17 px under it, right-aligned. Each
- * part takes its colour from [colors] (Settings › Appearance › Date, time & weather).
+ * `.status .clk` 40/700 tabular, and "Tue 29 Sep" 17 px under it, right-aligned.
  */
 @Composable
-fun StageClock(weatherInfo: WeatherInfo?, fahrenheit: Boolean, colors: ClockColors) {
-    val timeColor = clockColor(colors.time, StageColors.Text)
-    val dateColor = clockColor(colors.date, StageColors.Muted)
-    val weatherColor = clockColor(colors.weather, StageColors.Muted)
+fun StageClock() {
+    val timeColor = StageColors.Text
+    val dateColor = StageColors.Muted
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -194,22 +170,6 @@ fun StageClock(weatherInfo: WeatherInfo?, fahrenheit: Boolean, colors: ClockColo
         ) {
             val sub: TextStyle = stageText(17, 400).copy(shadow = shadow)
             Text(date, style = sub, color = dateColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (weatherInfo != null) {
-                Text("·", style = sub, color = StageColors.Muted.copy(alpha = 0.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                WeatherConditionIcon(weatherInfo, Modifier.size(17.mpx))
-                val degrees = if (fahrenheit) (weatherInfo.temperatureC * 9 / 5 + 32).toInt() else weatherInfo.temperatureC.toInt()
-                Text(
-                    if (weatherInfo.city.isNotBlank()) {
-                        stringResource(R.string.common_weather_degrees_city, degrees, weatherInfo.city)
-                    } else {
-                        stringResource(R.string.common_weather_degrees_city, degrees, "").trim()
-                    },
-                    style = sub,
-                    color = weatherColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
         }
     }
 }

@@ -374,8 +374,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         )
     }
     // Return focus to the language row after the dialog closes, rather than letting it fall to the
-    // screen's first mode row (same pattern as WeatherSettingsScreen's location dialog). Gated on
-    // langPickerWasOpen so this doesn't fire on first composition and steal focus from firstFocus.
+    // screen's first mode row. Gated on langPickerWasOpen so this doesn't fire on first composition
+    // and steal focus from firstFocus.
     LaunchedEffect(showLangPicker) {
         if (showLangPicker) {
             langPickerWasOpen = true

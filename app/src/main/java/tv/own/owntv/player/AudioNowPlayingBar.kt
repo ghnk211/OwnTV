@@ -82,7 +82,7 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.animationsOn
 
 /**
- * The wide "now-playing" bar shown in the top bar (left of the weather chip) while [PlayerMode.AUDIO]
+ * The wide "now-playing" bar shown in the top bar (left of the clock) while [PlayerMode.AUDIO]
  * is active. Video is stopped; only audio plays.
  *
  * **Two-stage focus:**

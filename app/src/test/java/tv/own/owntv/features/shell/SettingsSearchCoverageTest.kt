@@ -149,7 +149,7 @@ class SettingsSearchCoverageTest {
         "settings_open_subtitles_setup_remote",
         // Stage: a full page's own heading — the screen, which has its own entry — and the
         // titles and options of its popups and confirmations.
-        "settings_epg_sources_title", "settings_home_screen", "settings_title_date_time_weather",
+        "settings_epg_sources_title", "settings_home_screen",
         "settings_delete_subtitles", "settings_remote_shortcuts_capture_title", "settings_epg_sources_fill_playlist",
         "settings_sources_resync_title_full", "settings_sources_resync_now_full", "settings_sources_resync_remove_full",
         "settings_sources_test_title", "player_subtitles_sign_in_title", "settings_open_subtitles_setup_title",

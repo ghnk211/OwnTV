@@ -48,6 +48,7 @@
 - **📱 Edit a playlist from another device (#250)**
 
 ### 🐛 Fixes
+- **🧹 Date, time & weather removed from Settings; the top bar keeps the clock and the date**
 - **🗑️ Deleting a download or recording asks first**
 - **📺 Expanding the mini player returns to the channel playing, not the one browsed (#307)**
 - **🔁 Re-test measures the connection limit on Xtream, and the next sync keeps it (#244)**

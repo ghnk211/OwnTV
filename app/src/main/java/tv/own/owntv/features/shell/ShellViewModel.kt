@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -25,8 +24,6 @@ import tv.own.owntv.core.customize.CustomizationStore
 import tv.own.owntv.core.nav.MainSection
 import tv.own.owntv.core.nav.NavVisibility
 import tv.own.owntv.core.network.ConnectivityObserver
-import tv.own.owntv.core.weather.WeatherInfo
-import tv.own.owntv.core.weather.WeatherRepository
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
@@ -48,7 +45,6 @@ class ShellViewModel(
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val epgMigration: tv.own.owntv.core.epg.EpgMigration,
     private val autoRefresh: tv.own.owntv.core.sync.AutoRefresh,
-    private val weatherRepository: WeatherRepository,
     private val navVisibility: NavVisibility,
     private val profiles: tv.own.owntv.core.profile.ProfileManager,
     private val catalogSyncScheduler: tv.own.owntv.core.sync.work.CatalogSyncScheduler,
@@ -224,23 +220,6 @@ class ShellViewModel(
     fun setActivePlaylist(id: Long) {
         viewModelScope.launch { settings.setDefaultSource(id) }
     }
-
-    /**
-     * Weather chip. Refreshes when connectivity returns, cached 30 min by repository.
-     * Gated by the "Show weather" setting (OFF hides the chip) and honouring a manual location
-     * override so users on a VPN get their real city instead of the VPN server's.
-     */
-    val weather: StateFlow<WeatherInfo?> =
-        combine(connectivity.isOnline, settings.weatherEnabled, settings.weatherLocation) { online, enabled, loc ->
-            Triple(online, enabled, loc)
-        }.flatMapLatest { (online, enabled, loc) ->
-            if (!online || !enabled) flowOf(null as WeatherInfo?)
-            else flow { emit(weatherRepository.get(loc)) }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null as WeatherInfo?)
-
-    /** °F display for the weather chip (default °C). */
-    val weatherFahrenheit: StateFlow<Boolean> = settings.weatherFahrenheit
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     /** null = still loading; < 0 = first run (show setup wizard); >= 0 = active profile (show shell). */
     val activeProfileId: StateFlow<Long?> = settings.activeProfileId

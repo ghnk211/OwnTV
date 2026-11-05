@@ -126,8 +126,6 @@ fun OwnTVShell(
     playlists: List<tv.own.owntv.core.database.entity.SourceEntity> = emptyList(),
     activePlaylistId: Long = -1L,
     onSelectPlaylist: (Long) -> Unit = {},
-    weatherInfo: tv.own.owntv.core.weather.WeatherInfo? = null,
-    weatherFahrenheit: Boolean = false,
     activeProfileId: Long?,
     pendingDeepLink: LauncherDeepLink?,
     onDeepLinkConsumed: () -> Unit,
@@ -184,7 +182,6 @@ fun OwnTVShell(
     // mini-player's own controls. Read straight from settings so both entry points stay in sync.
     val settingsRepo = koinInject<tv.own.owntv.core.settings.SettingsRepository>()
     val remoteShortcutsEnabled by settingsRepo.chNavEnabled.collectAsStateWithLifecycle(initialValue = true)
-    val clockColors by settingsRepo.clockColors.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.ClockColors())
     val remoteShortcutBindings by settingsRepo.remoteShortcutBindings.collectAsStateWithLifecycle(
         initialValue = RemoteShortcutBindings.defaults,
     )
@@ -980,7 +977,6 @@ fun OwnTVShell(
 
     CompositionLocalProvider(
         LocalRemoteShortcuts provides remoteShortcutEnvironment,
-        tv.own.owntv.features.shell.components.LocalClockWeather provides (weatherInfo to weatherFahrenheit),
     ) {
     Box(
         modifier = modifier.fillMaxSize().background(shellBase)
@@ -1097,7 +1093,7 @@ fun OwnTVShell(
               }
               onSelectSection(section)
           }
-          // Audio Mode: the now-playing bar — in the top bar left of the weather chip, or in the Stage
+          // Audio Mode: the now-playing bar — in the top bar left of the clock, or in the Stage
           // cluster in the Continue pill's place. Present only while PlayerMode.AUDIO.
           val audioBarContent: (@Composable () -> Unit)? = if (playerMode == PlayerMode.AUDIO) {
               {
@@ -1445,9 +1441,6 @@ fun OwnTVShell(
                 onPlaylistClick = { showPlaylistPicker = true },
                 // Out of reach from deep in a list: from the rail or on Home only.
                 pillsFocusable = focusedLayer == ShellLayer.SIDEBAR || clusterFocused || selectedSection == MainSection.HOME,
-                weatherInfo = weatherInfo,
-                weatherFahrenheit = weatherFahrenheit,
-                clockColors = clockColors,
                 playlistDownFocusRequester = homeFirstRowFocus.takeIf { selectedSection == MainSection.HOME },
                 onPlaylistPillBounds = { playlistPillBounds = it },
                 modifier = Modifier.align(Alignment.TopEnd).onFocusChanged { clusterFocused = it.hasFocus }.focusGroup(),

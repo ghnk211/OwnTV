@@ -90,8 +90,8 @@
 1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	▲ ▼
 1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	◀
 1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	◀ ▶
-1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	$channelId|
 2	empty	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	$channelId|
 1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	${channel.id}|$shift
 1	log	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	EpgViewModel
 1	log	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	Stalker catch-up resolve failed channelId=${channel.id}
@@ -471,7 +471,6 @@
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	tab_OPEN_SUBTITLES
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	tab_PANEL_WIDTH
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	tab_SOURCES
-3	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	tab_WEATHER
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	theme
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	ui_zoom
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	update_startup
@@ -539,7 +538,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	▲ ▼
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	▶
 3	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	◀ ▶
-34	empty	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	\0
+33	empty	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	FIT
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	Metadata cache wipe after language change failed: ${it.message}
 1	protocol	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	Network is unreachable
@@ -619,7 +618,6 @@
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_volume
 3	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_volume_leveling
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_zoom
-1	technical	app/src/main/java/tv/own/owntv/features/settings/WeatherSettingsScreen.kt	#%06X
 1	empty	app/src/main/java/tv/own/owntv/features/setup/AddSourceChooserScreen.kt	\0
 17	empty	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	\0
 2	file-path	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	/
@@ -730,7 +728,6 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_NETWORK
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_OPEN_SUBTITLES
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_SOURCES
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_WEATHER
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	theme
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	ui_zoom
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	update_startup
@@ -764,10 +761,8 @@
 2	empty	app/src/main/java/tv/own/owntv/features/shell/components/StageRail.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/StageRail.kt	$line ›
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/StageRail.kt	?
-2	empty	app/src/main/java/tv/own/owntv/features/shell/components/StageStatus.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/StageStatus.kt	EEEdMMM
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/StageStatus.kt	tnum
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/StageStatus.kt	·
 1	empty	app/src/main/java/tv/own/owntv/features/shell/components/StartupSettingsDialogs.kt	\0
 3	empty	app/src/main/java/tv/own/owntv/features/shell/components/VodStage.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/VodStage.kt	%.1f
@@ -783,16 +778,6 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/VodStage.kt	· $count
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/VodStage.kt	•
 4	technical	app/src/main/java/tv/own/owntv/features/shell/components/VodStage.kt	★
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	clearNight
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	cloudy
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	drizzle
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	fog
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	partlyDay
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	partlyNight
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	rain
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	snow
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	sunny
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	thunder
 1	technical	app/src/main/java/tv/own/owntv/features/sports/SportsCalendarScreen.kt	${scoreText(m.sport, m.home?.score)} – ${scoreText(m.sport, m.away?.score)}
 1	technical	app/src/main/java/tv/own/owntv/features/sports/SportsCalendarScreen.kt	${sportEmoji(s)} ${bySport[s].orEmpty().size}
 1	technical	app/src/main/java/tv/own/owntv/features/sports/SportsCalendarScreen.kt	${sportEmoji(sport)} ${name.uppercase(locale)}

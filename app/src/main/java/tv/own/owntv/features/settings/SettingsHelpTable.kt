@@ -28,7 +28,6 @@ internal val SETTING_LINE: Map<String, Int> = mapOf(
     "fonts" to R.string.settings_line_fonts,
     "popup_size" to R.string.settings_line_popup_size,
     "animations" to R.string.settings_line_animations,
-    "tab_WEATHER" to R.string.settings_line_weather,
     "live_opens_in" to R.string.settings_line_live_opens_in,
     "vod_layout" to R.string.settings_line_vod_layout,
     "tab_PANEL_WIDTH" to R.string.settings_line_panel_width,
@@ -110,7 +109,6 @@ internal val SETTING_LINE: Map<String, Int> = mapOf(
 /** A row's name where the page words it differently from the app's older screens. */
 internal val SETTING_TITLE: Map<String, Int> = mapOf(
     "fonts" to R.string.settings_title_fonts,
-    "tab_WEATHER" to R.string.settings_title_date_time_weather,
     "vp_reset_live_pins" to R.string.settings_title_saved_live_choices,
     "vp_reset_pins" to R.string.settings_title_saved_choices,
     "vp_tunneled" to R.string.settings_title_tunneled,
@@ -141,7 +139,6 @@ internal val SETTING_HELP: Map<String, Int> = mapOf(
     "popup_size" to R.string.settings_help_popup_size,
     "ui_zoom" to R.string.settings_help_zoom,
     "animations" to R.string.settings_help_animations,
-    "tab_WEATHER" to R.string.settings_help_weather,
     "navigation" to R.string.settings_help_navigation,
     "live_layout" to R.string.settings_help_live_layout,
     "live_opens_in" to R.string.settings_live_opens_in_description,

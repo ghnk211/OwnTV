@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,13 +21,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.koin.compose.koinInject
 import tv.own.owntv.R
 import tv.own.owntv.core.brand.AppIcon
 import tv.own.owntv.core.brand.AppIconSwitcher
 import tv.own.owntv.core.brand.PixelMark as CorePixelMark
-import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.ui.theme.stageAccent
 
 /**
@@ -41,24 +37,16 @@ fun rememberAppliedIcon(): AppIcon {
     return remember(context) { AppIconSwitcher.applied(context) }
 }
 
-/** Settings › Accent-colored logo: the play triangle of every in-app logo in the accent (default on). */
-@Composable
-private fun accentTriangle(): Color? {
-    val settings: SettingsRepository = koinInject()
-    val on by settings.brandAccentTriangle.collectAsStateWithLifecycle(initialValue = true)
-    return if (on) stageAccent.accent else null
-}
-
 /**
  * The icon's flat mark (no shadow, no next card); at 32 dp and below the simpler small drawing. Pixel
- * above 32 dp is its dot matrix ([PixelMark]). With Accent-colored logo on, the play triangle takes the
- * accent: on a card a white triangle is drawn over the card's own and tinted (Pixel has none).
+ * above 32 dp is its dot matrix ([PixelMark]). The play triangle always takes the accent: on a card a
+ * white triangle is drawn over the card's own and tinted (Pixel has none).
  * [followAccent] false draws the icon as the launcher shows it (the icon pickers).
  */
 @Composable
 fun BrandMark(icon: AppIcon, size: Dp, modifier: Modifier = Modifier, followAccent: Boolean = true) {
     val small = size <= 32.dp
-    val accent = accentTriangle().takeIf { followAccent }
+    val accent: Color? = if (followAccent) stageAccent.accent else null
     if (icon == AppIcon.PIXEL && !small) {
         PixelMark(modifier.size(size), triangle = accent ?: Color(icon.accent))
         return

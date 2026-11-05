@@ -2,6 +2,7 @@ package tv.own.owntv.features.shell.components
 
 import tv.own.owntv.ui.theme.stageTone
 import tv.own.owntv.ui.theme.LocalStagePalette
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,14 +28,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import kotlin.math.roundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -64,19 +68,27 @@ import tv.own.owntv.ui.theme.LocalBackground
 import tv.own.owntv.ui.theme.LocalBlurredBackdrop
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.drawRadialGlow
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
 /**
  * Settings › Appearance › Glass & background: BACKGROUND — Background (Stage / Picture /
- * Plain), Picture, Picture look (Sharp / Soft / Dark), Darken, Blur, Accent light — and GLASS — the switch
- * and Glass opacity — then Reset. Every row's panel carries a live preview of Live TV on the background.
- * Rows that only apply to a picture show "Picture only" / "—" and cannot be focused without one.
+ * Plain), Picture, Picture look (Sharp / Soft / Dark), Darken, Blur, Accent light, Ambient glow —
+ * and GLASS — the switch and Glass opacity — then Reset. Every row's panel carries a live preview of
+ * Live TV on the background. Rows that only apply to a picture show "Picture only" / "—" and cannot be
+ * focused without one.
+ *
+ * The glow is here rather than beside Theme because it and Glass answer the same question — how the
+ * solid interface is softened — and one hides the other; as one style row on this page the choice is
+ * made in one place instead of a control that came and went with the Glass switch.
  */
 @Composable
 internal fun GlassBackgroundPage(
     background: BackgroundConfig,
     glassOn: Boolean,
+    glowOn: Boolean,
+    glowPulse: Boolean,
     alphaPercent: Int,
     onSetStyle: (BackgroundStyle) -> Unit,
     onOpenPicture: () -> Unit,
@@ -84,6 +96,7 @@ internal fun GlassBackgroundPage(
     onSetDim: (Int) -> Unit,
     onSetBlur: (Int) -> Unit,
     onSetAccentLight: (Boolean) -> Unit,
+    onSetGlow: (Boolean, Boolean) -> Unit,
     onToggleGlass: () -> Unit,
     onSetAlpha: (Int) -> Unit,
     onReset: () -> Unit,
@@ -94,7 +107,7 @@ internal fun GlassBackgroundPage(
     LaunchedEffect(Unit) { runCatching { rowsFocus.requestFocus() } }
     val pic = background.style == BackgroundStyle.PICTURE
     val hasFile = background.imagePath.isNotBlank()
-    val preview: @Composable () -> Unit = { GlassBackgroundPreview() }
+    val preview: @Composable () -> Unit = { GlassBackgroundPreview(glowOn && !glassOn, glowPulse) }
     val change = stringResource(R.string.settings_key_change)
     val back = stringResource(R.string.common_back) to stringResource(R.string.settings_group_appearance)
     val stepHints = listOf("◀ ▶" to change, back)
@@ -103,12 +116,12 @@ internal fun GlassBackgroundPage(
     StageFullPage(
         parents = listOf(stringResource(R.string.settings_group_appearance)),
         title = stringResource(R.string.settings_glass_bg_title),
-        count = pluralStringResource(R.plurals.settings_setting_count, 9, 9),
+        count = pluralStringResource(R.plurals.settings_setting_count, 10, 10),
         onBack = onBack,
         modifier = modifier,
         rowsFocus = rowsFocus,
     ) {
-        StageSettingsHeading(stringResource(R.string.settings_bg_background), 6, first = true)
+        StageSettingsHeading(stringResource(R.string.settings_bg_background), 7, first = true)
 
         val styles = listOf(BackgroundStyle.STAGE, BackgroundStyle.PICTURE, BackgroundStyle.PLAIN)
         val styleLabels = listOf(stringResource(R.string.settings_bg_stage), stringResource(R.string.settings_bg_picture), stringResource(R.string.settings_bg_plain))
@@ -171,6 +184,37 @@ internal fun GlassBackgroundPage(
             value = SettingValue.Switch(background.accentLight),
             onClick = { onSetAccentLight(!background.accentLight) },
             help = SettingHelp(accentTitle, accentLine, hints = okHints, extra = preview),
+        )
+
+        // Off / Glow / Slow pulse — one style choice instead of the two switches the old popup had.
+        // Glass draws over the aura, so this is the solid interface's answer to it, on the same page.
+        val glowTitle = stringResource(R.string.settings_ambient_glow)
+        val glowLabels = listOf(
+            stringResource(R.string.common_off),
+            stringResource(R.string.settings_ambient_glow_effect),
+            stringResource(R.string.settings_ambient_glow_pulse),
+        )
+        val glowIndex = when {
+            !glowOn -> 0
+            glowPulse -> 2
+            else -> 1
+        }
+        val setGlow = { index: Int -> onSetGlow(index != 0, index == 2) }
+        StageSettingRow(
+            icon = OwnTVIcon.GLOW,
+            title = glowTitle,
+            desc = stringResource(R.string.settings_ambient_glow_description),
+            value = SettingValue.Segmented(glowLabels, glowIndex),
+            onClick = { setGlow((glowIndex + 1) % glowLabels.size) },
+            onStep = { d -> setGlow((glowIndex + d).coerceIn(0, glowLabels.lastIndex)) },
+            help = SettingHelp(
+                glowTitle + dotSeparator() + previewTitle,
+                stringResource(R.string.settings_ambient_glow_dialog_description),
+                glowLabels,
+                chosen = glowIndex,
+                hints = stepHints,
+                extra = preview,
+            ),
         )
 
         StageSettingsHeading(stringResource(R.string.settings_glass_section), 2)
@@ -269,7 +313,7 @@ private fun PercentRow(
  * nothing focusable, no player — but it follows every change on this page at once.
  */
 @Composable
-private fun GlassBackgroundPreview() {
+private fun GlassBackgroundPreview(glowOn: Boolean, glowPulse: Boolean) {
     val home: HomeViewModel = koinViewModel()
     val state by home.uiState.collectAsStateWithLifecycle()
     val channels = remember(state.recentLive, state.favoriteLive) { (state.recentLive + state.favoriteLive).distinctBy { it.id }.take(8) }
@@ -277,6 +321,9 @@ private fun GlassBackgroundPreview() {
     val background = LocalBackground.current
     val blurred = LocalBlurredBackdrop.current
     val a = stageAccent
+    // The shell skips the aura on a light palette; the preview skips it too, so what is drawn here is
+    // always what the interface will actually do.
+    val showGlow = glowOn && !LocalStagePalette.current.isLight
     val previewRim = StageColors.Ink.copy(alpha = 0.1f)
     Column(Modifier.padding(top = 16.mpx)) {
         BoxWithConstraints(
@@ -296,6 +343,22 @@ private fun GlassBackgroundPreview() {
             ) {
                 if (background.showsPicture) BackgroundPicture(background, blurred, Modifier.fillMaxSize())
                 Box(Modifier.fillMaxSize().stageBackground(a.accent))
+                if (showGlow) {
+                    Canvas(Modifier.fillMaxSize()) {
+                        val center = Offset(size.width * 0.54f, size.height * 0.45f)
+                        drawRadialGlow(
+                            colors = listOf(a.accent.copy(alpha = 0.14f), a.accent.copy(alpha = 0.052f), Color.Transparent),
+                            center = center,
+                            radius = size.minDimension * 0.46f,
+                        )
+                        if (glowPulse) drawCircle(
+                            a.accent.copy(alpha = 0.18f),
+                            radius = size.minDimension * 0.34f,
+                            center = center,
+                            style = Stroke(width = 1.dp.toPx()),
+                        )
+                    }
+                }
                 // The rail at rest: a glass capsule of icons, Live TV lit.
                 Column(
                     Modifier.padding(start = 26.mpx, top = 230.mpx).width(60.mpx).stageGlass(30.mpx).padding(vertical = 18.mpx),

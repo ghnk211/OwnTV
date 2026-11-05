@@ -895,8 +895,6 @@ class SettingsViewModel(
 
     val appIcon: StateFlow<AppIcon> = settings.appIcon.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppIcon.DEFAULT)
     fun setAppIcon(icon: AppIcon) { viewModelScope.launch { settings.setAppIcon(icon) } }
-    val brandAccentTriangle: StateFlow<Boolean> = settings.brandAccentTriangle.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-    fun setBrandAccentTriangle(on: Boolean) { viewModelScope.launch { settings.setBrandAccentTriangle(on) } }
 
     // Docked mini-player: size (% of screen width) and screen position.
     val miniPlayerSizePct: StateFlow<Int> =

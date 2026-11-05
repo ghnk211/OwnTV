@@ -193,7 +193,6 @@ fun SettingsScreen(
     var showBgImageChooser by remember { mutableStateOf(false) }
     var showBgPicker by remember { mutableStateOf(false) }
     var showBgRemote by remember { mutableStateOf(false) }
-    var showAmbientGlow by remember { mutableStateOf(false) }
     // Background-image ingest copies a multi-megabyte file; it runs here, off the main thread.
     val ingestScope = rememberCoroutineScope()
 
@@ -230,7 +229,6 @@ fun SettingsScreen(
     val navigationRowFocus = remember { FocusRequester() }
     val startupRowFocus = remember { FocusRequester() }
     val livePreviewQuickFocus = remember { FocusRequester() }
-    val ambientGlowRowFocus = remember { FocusRequester() }
     // Hoisted list state for the root settings list. We snapshot its position the instant a row is
     // clicked (in onClick, before any recomposition) and restore it on dialog close, so the list
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
@@ -260,13 +258,13 @@ fun SettingsScreen(
         }
         onStartConsumed()
     }
-    val anyDialogOpen = showZoom || showPopupSize || showTheme || showAccent || showUpdate || showCatchupTime || showCatchupSources || showCatchupSourceValue || showEpgOffset || showGuideDays || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showFocusHighlight || showBgRemote || showVodLayout || showNavigation || showLiveLayout || stageSettings.open != null
+    val anyDialogOpen = showZoom || showPopupSize || showTheme || showAccent || showUpdate || showCatchupTime || showCatchupSources || showCatchupSourceValue || showEpgOffset || showGuideDays || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showFocusHighlight || showBgRemote || showVodLayout || showNavigation || showLiveLayout || stageSettings.open != null
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showPopupSize, showTheme, showAccent, showUpdate, showCatchupTime, showCatchupSources, showCatchupSourceValue, showEpgOffset, showGuideDays, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showFocusHighlight, showBgRemote, showVodLayout, showNavigation, showLiveLayout, stageSettings.open) {
+    LaunchedEffect(showZoom, showPopupSize, showTheme, showAccent, showUpdate, showCatchupTime, showCatchupSources, showCatchupSourceValue, showEpgOffset, showGuideDays, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showFocusHighlight, showBgRemote, showVodLayout, showNavigation, showLiveLayout, stageSettings.open) {
         // Only after a popup really closed: on first composition there is no opener, and holding a stale
         // offset for the settle frames bounced the page.
         if (!anyDialogOpen && dialogReturn != null) {
@@ -278,7 +276,6 @@ fun SettingsScreen(
     }
     val settingsVm: SettingsViewModel = koinViewModel()
     val appIcon by settingsVm.appIcon.collectAsStateWithLifecycle()
-    val brandAccent by settingsVm.brandAccentTriangle.collectAsStateWithLifecycle()
     val languageVm: LanguageSettingsViewModel = koinViewModel()
     val currentLocaleTag by languageVm.currentTag.collectAsStateWithLifecycle()
     val languageChip = languageChipText(currentLocaleTag)
@@ -312,9 +309,6 @@ fun SettingsScreen(
     val vodLayout by settingsVm.vodLayout.collectAsStateWithLifecycle()
     val ambientGlowEnabled by settingsVm.ambientGlowEnabled.collectAsStateWithLifecycle()
     val ambientGlowPulse by settingsVm.ambientGlowPulse.collectAsStateWithLifecycle()
-    LaunchedEffect(glassOn, themeMode) {
-        if (glassOn || themeMode != ThemeMode.DARK) showAmbientGlow = false
-    }
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
     val autoStart = rememberAutoStartSettingsState()
     val startupChannel by settingsVm.startupChannel.collectAsStateWithLifecycle()
@@ -577,6 +571,8 @@ fun SettingsScreen(
             onClick = { saveScroll(); dialogReturn = focusHighlightRowFocus; showFocusHighlight = true },
         ),
         // Glass & background has enough controls to be a page of its own; the root row only summarizes it.
+        // Ambient glow lives on that page too: it is the other way to soften the solid interface, not a
+        // second decorative switch that comes and goes with the Glass setting.
         RootRow(
             tabRowKey(SettingsTab.GLASS_EFFECT), TileTone.PRIMARY, OwnTVIcon.SPARKLE,
             title = stringResource(R.string.settings_glass_bg_title), desc = stringResource(R.string.settings_line_glass_bg),
@@ -585,15 +581,6 @@ fun SettingsScreen(
             focus = rowFocus.getValue(SettingsTab.GLASS_EFFECT),
             onClick = { open(SettingsTab.GLASS_EFFECT) },
         ),
-        if (themeMode == ThemeMode.DARK && !glassOn) RootRow(
-            "ambient_glow", TileTone.PRIMARY, OwnTVIcon.GLOW,
-            title = stringResource(R.string.settings_ambient_glow),
-            desc = stringResource(R.string.settings_ambient_glow_description),
-            chip = stringResource(if (ambientGlowEnabled) R.string.common_on else R.string.common_off),
-            chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
-            focus = ambientGlowRowFocus,
-            onClick = { saveScroll(); dialogReturn = ambientGlowRowFocus; showAmbientGlow = true },
-        ) else null,
         RootRow(
             "fonts", TileTone.SECONDARY, OwnTVIcon.TEXT_SIZE,
             title = stringResource(R.string.settings_font_customization),
@@ -739,12 +726,6 @@ fun SettingsScreen(
             onClick = { saveScroll(); dialogReturn = appIconRowFocus; showAppIcon = true },
         ),
         RootRow(
-            "brand_accent", TileTone.SECONDARY, OwnTVIcon.PALETTE,
-            title = stringResource(R.string.settings_brand_accent), desc = stringResource(R.string.settings_line_brand_accent),
-            chip = stringResource(if (brandAccent) R.string.common_on else R.string.common_off), chipTone = TileTone.SECONDARY,
-            onClick = { settingsVm.setBrandAccentTriangle(!brandAccent) },
-        ),
-        RootRow(
             "app_startup", TileTone.SECONDARY, OwnTVIcon.POWER,
             title = stringResource(R.string.settings_app_startup), desc = stringResource(R.string.settings_app_startup_description),
             chip = if (startupMode == tv.own.owntv.core.settings.StartupMode.SPECIFIC_CHANNEL) {
@@ -843,7 +824,7 @@ fun SettingsScreen(
     // Quick's count says what it lists. Rows that are only hidden for now keep their pins.
     LaunchedEffect(quickPinned, rootItems.size) {
         val known = rootItems.map { it.key }.toSet() + tv.own.owntv.features.settings.VIDEO_QUICK_ROWS.map { it.key } +
-            setOf("ambient_glow", "catchup_sources", "vp_tunneled", "vp_preview_audio", "vp_timeshift_window", "vp_timeshift_resume", "vp_multiview_tiles")
+            setOf("catchup_sources", "vp_tunneled", "vp_preview_audio", "vp_timeshift_window", "vp_timeshift_resume", "vp_multiview_tiles")
         val kept = quickPinned.filter { it in known }
         if (kept.size < quickPinned.size) settingsVm.setQuickPinnedKeys(kept)
     }
@@ -973,8 +954,15 @@ fun SettingsScreen(
                 chip = if (customAccent.isNotBlank()) customAccent.uppercase() else stringResource(accent.labelRes), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAccent = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_focus_highlight), stringResource(R.string.settings_search_keywords_focus), OwnTVIcon.FOCUS_HIGHLIGHT, TileTone.SECONDARY,
                 chip = focusHighlightChip(focusHighlight, focusHighlightWidth), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showFocusHighlight = true },
-            if (themeMode == ThemeMode.DARK && !glassOn) SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ambient_glow), stringResource(R.string.settings_ambient_glow_description), OwnTVIcon.GLOW, TileTone.PRIMARY,
-                chip = stringResource(if (ambientGlowEnabled) R.string.common_on else R.string.common_off), chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAmbientGlow = true } else null,
+            // The glow is a style on the Glass & background page now; the entry lands there rather than
+            // opening a dialog of its own.
+            SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ambient_glow), stringResource(R.string.settings_ambient_glow_description), OwnTVIcon.GLOW, TileTone.SECONDARY,
+                chip = when {
+                    !ambientGlowEnabled -> stringResource(R.string.common_off)
+                    ambientGlowPulse -> stringResource(R.string.settings_ambient_glow_pulse)
+                    else -> stringResource(R.string.settings_ambient_glow_effect)
+                },
+                chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.GLASS_EFFECT) },
         SettingsSearchEntry(
             stringResource(R.string.settings_group_appearance),
             stringResource(R.string.settings_font_customization),
@@ -997,8 +985,6 @@ fun SettingsScreen(
                 chip = stringResource(R.string.common_percent, uiZoomPercent), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showZoom = true },
         SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_app_icon), stringResource(R.string.settings_app_icon_summary), OwnTVIcon.PALETTE, TileTone.SECONDARY,
                 chip = stringResource(appIcon.label), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAppIcon = true },
-        SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_brand_accent), stringResource(R.string.settings_line_brand_accent), OwnTVIcon.PALETTE, TileTone.SECONDARY,
-                chip = stringResource(if (brandAccent) R.string.common_on else R.string.common_off), chipTone = TileTone.SECONDARY, showChevron = false) { settingsVm.setBrandAccentTriangle(!brandAccent) },
             SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_animations), stringResource(R.string.settings_search_keywords_animation), OwnTVIcon.MOTION, TileTone.SECONDARY,
                 chip = stringResource(animationLevel.labelRes), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAnimations = true },
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_live_preview"), stringResource(R.string.settings_quick_live_preview), stringResource(R.string.settings_search_keywords_live_preview), OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
@@ -1307,7 +1293,6 @@ fun SettingsScreen(
             onDismiss = { showPopupSize = false },
         )
     }
-    if (showAmbientGlow) AmbientGlowHost(settingsVm, ambientGlowEnabled, ambientGlowPulse, onClose = { showAmbientGlow = false })
     if (showAfrWarning) {
         AutoFrameRateWarningDialog(
             onEnable = { settingsVm.setAutoFrameRate(afrWarningLive, true); showAfrWarning = false },
@@ -1534,17 +1519,6 @@ private fun AnimationsDialogHost(settingsVm: SettingsViewModel, animationLevel: 
         selected = animationLevel.name,
         onSelect = { settingsVm.setAnimationLevel(tv.own.owntv.core.theme.AnimationLevel.valueOf(it)); onClose() },
         onDismiss = { onClose() },
-    )
-}
-
-@Composable
-private fun AmbientGlowHost(settingsVm: SettingsViewModel, ambientGlowEnabled: Boolean, ambientGlowPulse: Boolean, onClose: () -> Unit) {
-    AmbientGlowDialog(
-        glowEnabled = ambientGlowEnabled,
-        pulseEnabled = ambientGlowPulse,
-        onToggleGlow = { settingsVm.setAmbientGlowEnabled(!ambientGlowEnabled) },
-        onTogglePulse = { settingsVm.setAmbientGlowPulse(!ambientGlowPulse) },
-        onDismiss = onClose,
     )
 }
 
@@ -2096,37 +2070,6 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
     }
 }
 
-/** Solid-interface radiance controls, kept together in one compact TV-safe popup. */
-@Composable
-private fun AmbientGlowDialog(
-    glowEnabled: Boolean,
-    pulseEnabled: Boolean,
-    onToggleGlow: () -> Unit,
-    onTogglePulse: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    // Two switches: in the page's panel, a Stage popup elsewhere.
-    val rows: @Composable () -> Unit = {
-        val first = remember { FocusRequester() }
-        LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
-        Column(Modifier.trapAllFocusExit().focusGroup()) {
-            tv.own.owntv.ui.stage.StagePopupOption(
-                title = stringResource(R.string.settings_ambient_glow_effect), onClick = onToggleGlow, modifier = Modifier.focusRequester(first),
-                trailing = { tv.own.owntv.ui.stage.StageSwitch(glowEnabled) },
-            )
-            if (glowEnabled) tv.own.owntv.ui.stage.StagePopupOption(
-                title = stringResource(R.string.settings_ambient_glow_pulse), onClick = onTogglePulse,
-                trailing = { tv.own.owntv.ui.stage.StageSwitch(pulseEnabled) },
-            )
-            Row(Modifier.fillMaxWidth().padding(top = 16.mpx), horizontalArrangement = Arrangement.End) {
-                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_done), onClick = onDismiss, height = 52.mpx, textSize = 18, tinted = true)
-            }
-        }
-    }
-    if (tv.own.owntv.features.settings.panelEditor(onDismiss) { rows() }) return
-    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_ambient_glow), body = stringResource(R.string.settings_ambient_glow_dialog_description)) { rows() }
-}
-
 /** The Glass & background page. Background selection stays nested here, so Back returns here. */
 @Composable
 private fun GlassEffectSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
@@ -2139,9 +2082,13 @@ private fun GlassEffectSettingsScreen(onBack: () -> Unit, modifier: Modifier = M
     val ingestScope = rememberCoroutineScope()
 
     val background by settingsVm.backgroundConfig.collectAsStateWithLifecycle()
+    val ambientGlowEnabled by settingsVm.ambientGlowEnabled.collectAsStateWithLifecycle()
+    val ambientGlowPulse by settingsVm.ambientGlowPulse.collectAsStateWithLifecycle()
     GlassBackgroundPage(
         background = background,
         glassOn = glassConfig.enabled,
+        glowOn = ambientGlowEnabled,
+        glowPulse = ambientGlowPulse,
         alphaPercent = (glassConfig.alpha * 100).roundToInt(),
         onSetStyle = { style ->
             // Picture with no picture yet goes straight to the picker.
@@ -2153,6 +2100,11 @@ private fun GlassEffectSettingsScreen(onBack: () -> Unit, modifier: Modifier = M
         onSetDim = settingsVm::setBackgroundDim,
         onSetBlur = settingsVm::setBackgroundBlur,
         onSetAccentLight = settingsVm::setBackgroundAccentLight,
+        // One style choice writes the two stored switches: Off, a steady glow, or the slow pulse.
+        onSetGlow = { on, pulse ->
+            settingsVm.setAmbientGlowEnabled(on)
+            settingsVm.setAmbientGlowPulse(pulse)
+        },
         onToggleGlass = {
             settingsVm.setGlassScopeBitmask(
                 if (glassConfig.enabled) 0 else GlassConfig.ON_BITS,
@@ -2565,7 +2517,6 @@ private fun stageRowExtras(
     val liveView by vm.liveView.collectAsStateWithLifecycle()
     val vodLayout by vm.vodLayout.collectAsStateWithLifecycle()
     val appIcon by vm.appIcon.collectAsStateWithLifecycle()
-    val brandAccent by vm.brandAccentTriangle.collectAsStateWithLifecycle()
     val focusHighlight by vm.focusHighlight.collectAsStateWithLifecycle()
     val focusWidth by vm.focusHighlightWidth.collectAsStateWithLifecycle()
     val sep = stringResource(R.string.content_epg_bits_separator)
@@ -2663,7 +2614,6 @@ private fun stageRowExtras(
             onClick = { vm.setVodLayout(cycle(vodLayouts, vodLayout, 1)) },
         ),
         "app_icon" to RowExtra(SettingValue.Opens(stringResource(appIcon.label))),
-        "brand_accent" to RowExtra(SettingValue.Switch(brandAccent), onClick = { vm.setBrandAccentTriangle(!brandAccent) }),
         "check_updates" to RowExtra(SettingValue.Action(stringResource(R.string.settings_check_now))),
         "tab_LANGUAGE" to RowExtra(help = pluralStringResource(R.plurals.settings_help_language, languages, languages)),
     ) + serviceRowExtras(vm)

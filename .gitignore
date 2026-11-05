@@ -13,6 +13,7 @@ local.properties
 # Local tooling / agent state
 .codex-*
 .claude/
+.workbuddy/
 .planning/
 .serena/
 .codegraph/

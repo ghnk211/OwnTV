@@ -644,6 +644,10 @@ fun StageSettingRow(
             if (android.os.SystemClock.uptimeMillis() - longAt > 800) {
                 // A choice list this opens in the panel hands focus back here when it closes.
                 panel?.opener = self
+                // A touchscreen never focuses the row, so the panel — and the actions in it — would
+                // stay uncomposed and the tap would do nothing. A tap publishes the row's panel here;
+                // the actions are ordinary clickables, so the next tap reaches Edit / Delete.
+                if (panel != null) panel.help = help
                 onClick()
             }
         },

@@ -59,6 +59,7 @@ import tv.own.owntv.features.settings.SettingsViewModel
 import tv.own.owntv.features.settings.lock.SettingsPinViewModel
 import tv.own.owntv.core.settings.guardsPage
 import tv.own.owntv.features.shell.components.RailAvatar
+import tv.own.owntv.features.shell.components.SettingsGroup
 import tv.own.owntv.player.PlaybackErrorLog
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.stage.StageGroupItem
@@ -91,7 +92,7 @@ fun MoreScreen(
     onSwitchProfile: () -> Unit,
     /** OK on the avatar: the avatar picker, with "Your own picture". */
     onPickAvatar: () -> Unit,
-    onOpenSettings: (group: Int?, search: Boolean) -> Unit,
+    onOpenSettings: (group: SettingsGroup?, search: Boolean) -> Unit,
     onPlayChannel: (Long) -> Unit,
     onPlayMovie: (Long, Long) -> Unit,
     onPlayEpisode: (seriesId: Long, episodeId: Long, positionMs: Long) -> Unit,
@@ -234,7 +235,7 @@ fun MoreScreen(
                 MoreItem.BACKUP -> BackupScreen(entry = pageTarget, modifier = Modifier.fillMaxSize())
                 MoreItem.LOCAL_SYNC -> LocalSyncScreen(entry = pageTarget, modifier = Modifier.fillMaxSize())
                 MoreItem.ERROR_LOG -> ErrorLogPage(setEntry = setEntry, onCountChanged = { logVersion++ })
-                MoreItem.ABOUT -> AboutPage(vm = vm, entry = pageTarget, onOpenLanguage = { onOpenSettings(8, false) })
+                MoreItem.ABOUT -> AboutPage(vm = vm, entry = pageTarget, onOpenLanguage = { onOpenSettings(SettingsGroup.APP, false) })
                 MoreItem.DEVELOPER -> Box(Modifier.focusRequester(pageTarget).focusGroup()) { DeveloperScreen(onBack = backToSheet) }
             }
         }

@@ -37,15 +37,22 @@ class SettingsSearchCoverageTest {
      * Tabs deliberately absent from search. Backup and Local sync live under ⋯ More, not Settings, and
      * the code says so: a result that lands somewhere the row is not is worse than no result.
      */
-    private val notSearchable = setOf("ROOT", "BACKUP", "LOCAL_SYNC")
+    private val notSearchable = setOf("ROOT")
+
+    /** The page registry replaced the old flat `SettingsTab` enum; its constants are the pages. */
+    private val pagesSource: String by lazy {
+        val file = File("src/main/java/tv/own/owntv/features/settings/SettingsPage.kt")
+        assertTrue("expected to run from the app module, cwd=${File(".").absolutePath}", file.isFile)
+        file.readText()
+    }
 
     @Test
     fun `every settings screen can be found by search`() {
-        val declared = Regex("""private enum class SettingsTab \{([^}]*)\}""")
-            .find(source)?.groupValues?.get(1)
-            ?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
+        val declared = Regex("""enum class SettingsPage\([\s\S]*?\{([\s\S]*?)\n\}""")
+            .find(pagesSource)?.groupValues?.get(1)
+            ?.lines()?.mapNotNull { Regex("""^\s{4}([A-Z_]+)\(""").find(it)?.groupValues?.get(1) }
             .orEmpty()
-        assertTrue("could not read the SettingsTab enum", declared.size > 10)
+        assertTrue("could not read the SettingsPage enum", declared.size > 10)
 
         val reachable = Regex("""SettingsTab\.([A-Z_]+)""").findAll(searchBlock)
             .map { it.groupValues[1] }.toSet()

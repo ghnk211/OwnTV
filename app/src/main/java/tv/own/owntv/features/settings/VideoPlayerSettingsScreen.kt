@@ -66,7 +66,14 @@ private const val SECTION_DIAGNOSTICS = 11
  * The Settings groups that hold Video player rows: each part is a sub-heading and the sections
  * listed under it. App adds Diagnostics under its own rows; Watching & recording adds Recording after.
  */
-internal enum class VideoGroup(val titleRes: Int, val parts: List<Pair<Int, List<Int>>>) {
+enum class VideoGroup(val titleRes: Int, val parts: List<Pair<Int, List<Int>>>) {
+    /** The Settings › Player group: the old Picture group first, then Player and Streaming. */
+    PLAYBACK(R.string.settings_vp_cat_player, listOf(
+        R.string.settings_vp_cat_picture to listOf(SECTION_PICTURE),
+        R.string.settings_vp_cat_frame_rate to listOf(SECTION_FRAME_RATE),
+        R.string.settings_vp_cat_player to listOf(SECTION_PLAYER),
+        R.string.settings_vp_cat_streaming to listOf(SECTION_STREAMING),
+    )),
     PLAYER(R.string.settings_vp_cat_player, listOf(R.string.settings_vp_cat_player to listOf(SECTION_PLAYER), R.string.settings_vp_cat_streaming to listOf(SECTION_STREAMING))),
     PICTURE(R.string.settings_vp_cat_picture, listOf(R.string.settings_vp_cat_picture to listOf(SECTION_PICTURE), R.string.settings_vp_cat_frame_rate to listOf(SECTION_FRAME_RATE))),
     SOUND(R.string.settings_group_sound_subtitles, listOf(R.string.settings_vp_section_sound to listOf(SECTION_SOUND), R.string.settings_vp_cat_languages to listOf(SECTION_LANGUAGES))),

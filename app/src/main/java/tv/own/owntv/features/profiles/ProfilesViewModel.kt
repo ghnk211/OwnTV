@@ -100,6 +100,11 @@ class ProfilesViewModel(
         viewModelScope.launch { manager.edit(profileDao.getById(profile.id) ?: profile, name, avatarId, isKids, pin) }
     }
 
+    /** Turn Kids mode on or off without touching the profile's other fields, PIN included. */
+    fun setKids(profile: ProfileEntity, isKids: Boolean) {
+        viewModelScope.launch { profileDao.update(profile.copy(isKids = isKids)) }
+    }
+
     fun rename(profile: ProfileEntity, name: String) {
         viewModelScope.launch { profileDao.update(profile.copy(name = name.ifBlank { profile.name })) }
     }

@@ -3,4 +3,5 @@
     <string name="content_search_channels">搜尋頻道…</string>
     <string name="content_search_movies">搜尋電影…</string>
     <string name="content_search_series">搜尋影集…</string>
+    <string name="move_order_instructions">▲ ▼ 選擇一列，按 OK 拿起或放下；儲存或取消後關閉。</string>
 </resources>

@@ -588,7 +588,7 @@ fun LiveScreen(
         val liveHints = listOf(
             stringResource(R.string.common_ok) to stringResource(R.string.content_key_watch),
             "◀" to stringResource(R.string.content_category_browser_title),
-            "▶" to stringResource(R.string.content_key_schedule),
+            "▶" to stringResource(R.string.content_key_programmes),
             stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_key_options),
         )
         val gapCat = fx(26)
@@ -1148,7 +1148,7 @@ fun LiveScreen(
     }
     tv.own.owntv.features.categorylock.CategoryLockPrompts(
         tv.own.owntv.core.model.MediaType.LIVE,
-        onAction = { key, action -> action.run(key, vm::hideCategory, vm::enterCategoryMoveMode, vm::restoreCategory) },
+        onAction = { key, action -> action.run(key, vm::hideCategory, vm::enterCategoryMoveMode, vm::restoreCategory) { } },
     ) { key, opened ->
         if (listPin.takeClose(opened)) Unit
         else if (opened && categoriesOpen) { categoriesOpen = false; focusChannelList(); listPin.openedFromCategories() }

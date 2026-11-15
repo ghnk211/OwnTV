@@ -420,6 +420,7 @@ private fun SourceRow(
             SourceType.M3U -> R.string.settings_sources_type_m3u
             SourceType.STALKER -> R.string.settings_sources_type_stalker
             SourceType.LOCAL_BACKUP -> R.string.settings_sources_backup
+            SourceType.TVBOX -> R.string.setup_tvbox
         },
         source.url,
     )
@@ -511,6 +512,15 @@ private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType, stored:
             seriesActive = seriesActive || series > 0,
         )
         SourceType.LOCAL_BACKUP -> SyncProgressCounts(
+            live = 0,
+            movies = 0,
+            series = 0,
+            liveActive = false,
+            moviesActive = false,
+            seriesActive = false,
+        )
+        // TVBOX sources are indexed on browse, not synced — no sync progress to report.
+        SourceType.TVBOX -> SyncProgressCounts(
             live = 0,
             movies = 0,
             series = 0,

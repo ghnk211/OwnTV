@@ -23,7 +23,6 @@ enum class SettingsPage(
     ROOT(SettingsGroup.QUICK, "root", R.string.common_nav_settings),
     LANGUAGE(SettingsGroup.APP, "language", R.string.settings_language),
     PROFILES(SettingsGroup.APP, "profiles", R.string.profiles_title),
-    SPORTS(SettingsGroup.APP, "sports", R.string.sports_title),
     NETWORK(SettingsGroup.APP, "proxy", R.string.common_proxy),
     DNS(SettingsGroup.APP, "dns", R.string.settings_dns),
     SOURCES(SettingsGroup.SOURCES, "playlists", R.string.settings_playlists),

@@ -40,12 +40,32 @@ dependencyResolutionManagement {
     }
 }
 
-// Local development: build against core's own source instead of the published artifact, so a core
-// edit reaches this app with no publish step. Gradle substitutes the dependency automatically
-// because OwnTV_Core publishes under the same group and artifact ids this app asks for. CI leaves
-// owntv.corePath unset and resolves the pinned version instead.
-// Set it in ~/.gradle/gradle.properties, never here:  owntv.corePath=E:/MEGA/CODE/AI/OwnTV_Core
-providers.gradleProperty("owntv.corePath").orNull?.takeIf { it.isNotBlank() }?.let { includeBuild(it) }
+// The TV app builds against the shared Core SOURCE by default — no command-line property needed.
+// Gradle substitutes tv.own.owntv:core / :player-core with the included build's projects, so the
+// version pinned in libs.versions.toml is irrelevant on this path (see
+// docs/alignment-to-own-project-zh.md §13). The sibling checkout ../Qwn/OwnTV_Core is the one
+// source of truth; Sports was removed from the app because that Core no longer carries its API.
+//
+// Overrides, for machines without that checkout:
+//   -Powntv.corePath=<dir>       use a Core checkout somewhere else
+//   -Powntv.coreArtifact=true    keep the published-artifact path (CI uses this; it needs a
+//                                published Core matching the app source before it can compile)
+val coreArtifactOnly = providers.gradleProperty("owntv.coreArtifact").orNull == "true"
+val explicitCorePath = providers.gradleProperty("owntv.corePath").orNull?.takeIf { it.isNotBlank() }
+val defaultCoreDir = settingsDir.parentFile?.resolve("Qwn/OwnTV_Core")
+val coreBuildDir = when {
+    coreArtifactOnly -> null
+    explicitCorePath != null -> file(explicitCorePath)
+    defaultCoreDir?.isDirectory == true -> defaultCoreDir
+    else -> {
+        logger.warn(
+            "OwnTV: ../Qwn/OwnTV_Core not found; falling back to the published Core artifact. " +
+                "This app source needs the Core source build — pass -Powntv.corePath=<Core checkout>.",
+        )
+        null
+    }
+}
+coreBuildDir?.let { includeBuild(it) }
 
 rootProject.name = "OwnTV"
 include(":app")

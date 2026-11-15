@@ -484,7 +484,7 @@ fun SearchScreen(
                         },
                     ),
                 )
-                if (active?.channel() != null) add("▶" to stringResource(R.string.content_key_schedule))
+                if (active?.channel() != null) add("▶" to stringResource(R.string.content_key_programmes))
             }
             if (showingResults) {
                 add("▲" to stringResource(R.string.common_search))

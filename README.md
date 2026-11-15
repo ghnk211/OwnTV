@@ -184,6 +184,25 @@ OwnTV_Mobile/  (separate repo, the phone and tablet app on the same core)
   the same core.
 - 🧩 **[OwnTV Core](https://github.com/ahXN00/OwnTV_Core)** — the shared engine both apps run on.
 
+**Maintenance boundary (2026-11-14).** The TV app and the mobile app evolve **in parallel**: only
+`OwnTV_Core` is shared, and no app-layer code is back-ported in either direction. Multi-profile
+("Who's watching?", profile CRUD, Kids, PIN, per-profile download permission, per-profile start page),
+auto start on boot/wake, remote-key shortcuts and channel paging are **TV-only** and stay in this repo.
+TVBox VOD sources, the Core-backed download integration and the mobile settings/i18n line are
+**mobile-only**; the mobile app keeps its intentional single-profile design. The TV line builds against
+the shared Core source (see the 2026-11-15 update below). A cross-port needs its
+own project and review — see
+[`docs/alignment-to-own-project-zh.md`](docs/alignment-to-own-project-zh.md) (Chinese) for the full
+boundary and [`docs/multi-profile-contract-zh.md`](docs/multi-profile-contract-zh.md) for the profile
+contract.
+
+**2026-11-15 update.** The TV line builds against the shared `OwnTV_Core` source by default:
+`settings.gradle.kts` includes the sibling `../Qwn/OwnTV_Core` composite build, so **no
+`-Powntv.corePath` argument is needed**. **Sports has been removed from the TV app** — the shared Core
+no longer carries its data layer, strings or navigation entries. `-Powntv.corePath=<dir>` still
+overrides the checkout, and `-Powntv.coreArtifact=true` keeps the published-artifact path for CI;
+the pinned `core:1.0.69` artifact alone does not compile this source tree.
+
 ## 📚 Docs (`extras/`)
 
 - 📖 **[User Guide](extras/USER_GUIDE.md)** — every feature and where to find it.

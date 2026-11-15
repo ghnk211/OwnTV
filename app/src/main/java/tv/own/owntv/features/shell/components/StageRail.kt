@@ -97,9 +97,9 @@ enum class RailState {
  */
 data class NowPlayingRail(val logoUrl: String?, val audioMode: Boolean, val playing: Boolean)
 
-/** The rail order: Search first, Sports then the Guide right after Live TV, More last. */
+/** The rail order: Search first, then the Guide after Live TV, More last. */
 private val StageRailOrder = listOf(
-    MainSection.SEARCH, MainSection.HOME, MainSection.LIVE_TV, MainSection.SPORTS, MainSection.EPG,
+    MainSection.SEARCH, MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG,
     MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS,
 )
 
@@ -342,7 +342,6 @@ private val MainSection.stageIcon: OwnTVIcon
         MainSection.HOME -> OwnTVIcon.HOME
         MainSection.LIVE_TV -> OwnTVIcon.LIVE_TV
         MainSection.EPG -> OwnTVIcon.EPG
-        MainSection.SPORTS -> OwnTVIcon.SPORTS
         MainSection.MOVIES -> OwnTVIcon.MOVIES
         MainSection.SERIES -> OwnTVIcon.SERIES
         MainSection.DOWNLOADS -> OwnTVIcon.DOWNLOADS

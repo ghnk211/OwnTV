@@ -10,6 +10,7 @@
 ## Unreleased
 
 ### ✨ New features
+- **🗑️ Sports: removed from the TV app**
 - **⚡ Search: the poster backdrop is blurred once, and blurred on Android 11 and older too** (community PR #268 by @sarmadsoomro)
 - **🖼️ More posters kept in memory, so Home scrolls cleaner** (community PR #267 by @sarmadsoomro)
 - **📺 Smoother TV Guide scrolling** (community PR #266 by @sarmadsoomro)

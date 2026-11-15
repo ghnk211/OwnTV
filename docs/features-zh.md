@@ -3,7 +3,7 @@
 > 整理日期：2026-11-05 ｜ 基于仓库当前分支 `mini`（与上游 `main` 同步，0 ahead / 0 behind）
 > 依据：`app/src/main` 实际代码结构、`AndroidManifest.xml`、`app/build.gradle.kts`，并交叉核对
 > `extras/OwnTV_Master_Product_Brief.md`、`extras/USER_GUIDE.md`、`CHANGELOG.md`
-> 代码规模：`app/src` 下 326 个 Kotlin 源文件（含测试与 debug 工具），`features/` 22 个功能包
+> 代码规模：`app/src` 下 311 个 Kotlin 源文件（含测试与 debug 工具，Sports 已下线），`features/` 21 个功能包
 
 ---
 
@@ -45,13 +45,12 @@
 
 | 一级入口 | 核心能力 | 代码位置 |
 |---|---|---|
-| 首页 Home | Now Trending、继续观看、收藏频道/电影/剧集、最近频道、体育行 | `features/home` |
+| 首页 Home | Now Trending、继续观看、收藏频道/电影/剧集、最近频道 | `features/home` |
 | 直播 Live TV | 频道列表 + 预览窗、分类、换台、追看、频道菜单 | `features/live` |
 | 电视指南 Guide | XMLTV 时间×频道网格、提醒、录制、追看回看、自动匹配 | `features/epg` |
 | 电影 Movies | 分类/网格/详情/播放、排序、标记已看 | `features/movies` |
 | 剧集 Series | 季/集、续播、下一集、整季下载、集序 | `features/series` |
 | 搜索 Search | 直播/剧/电影/剧集联合搜索、语音搜索、节目搜索 | `features/search` |
-| 体育 Sports | 比分、赛程日历、联赛榜单、球队页、找频道 | `features/sports` |
 | 下载 Downloads | 电影/剧集离线下载 + 录制文件管理 | `features/downloads`、`features/recordings` |
 | 更多 More | 设置、收藏、历史、备份、本地同步、错误日志、关于 | `features/more` |
 | 首次启动 Setup | 语言 → 显示 → 免责 → 建档 → 加源 → 完成 | `features/setup` |
@@ -168,18 +167,7 @@
 - 空状态给「跳转、最近搜索、继续观看」；**TV Shows** 组列出已存指南中标题匹配、正在播或 12 小时内播出的节目，OK 跳频道。
 - 支持语音搜索（设备有语音识别器时；通过系统 `RECOGNIZE_SPEECH`，无需麦克风权限）。
 
-### 5.5 体育
-
-- 数据来自 ESPN：实时比分、今日/明日赛事、赛事页（比分、场地、时间线、统计、阵容、积分榜、近况、转播台）。
-- 关注维度：可按运动项目与联赛多选，长按 OK 自排顺序；首页有带 LIVE 标记的体育行。
-- **三个标签页**共用一套项目/联赛按钮：Scores、Calendar（月历 + 当日赛事，按月缓存）、
-  Leagues（联赛卡片→积分榜/赛程/赛果；F1 车手/车队/分站；网球排名）。
-- 球队独立页：本赛季赛程赛果、下一场、近五场、积分榜位次。
-- **找频道**：在用户自己的指南里排序正在播该赛事的频道（开赛前 30 分钟起），可按语言/国家/画质/播放列表过滤；
-  匹配全在本地设备完成，播放列表数据不出设备。
-- 设置里有独立分组：联赛选择、自动重建、实时刷新、播放列表与严格频道过滤、日历刷新。
-
-### 5.6 多播放列表与 Stalker
+### 5.5 多播放列表与 Stalker
 
 - 可把所有播放列表合并浏览，也可把整个应用收窄到某一个；右上播放列表胶囊切换（显示短标记与频道数），
   纯展示、不删不重导。多源同时活跃时，分类与条目带源标签。
@@ -240,6 +228,8 @@
 ## 8. 档案、下载与存储
 
 - **多档案**：各自独立的收藏、历史、续播点与布局；可选 PIN 锁（加盐哈希）与「谁在看？」启动门。
+  多档案是 **TV 端专属能力**，完整清单、实现位置与回归契约见 `docs/multi-profile-contract-zh.md`；
+  `OwnTV_Mobile` 保持单档案，两端不回填、不移植。
 - **儿童模式**：在直播、电影、剧集、首页、搜索、指南、追看、下载、启动器推荐、直接播放等所有面向上
   过滤成人分类与条目，并排除成人向 TMDB 结果；指南本身也隐藏。识别用多语言分类标记 + Adult Swim 例外。
 - 源可在档案间共享；切换档案不必退出应用。
@@ -256,7 +246,7 @@
 ### 9.1 界面骨架
 
 - 全应用一套 **Stage** 设计：整宽页面、Plus Jakarta Sans、单一线性图标集、统一焦点光晕与弹窗套件。
-- **导航栏**：搜索、首页、直播、体育、指南、电影、剧集、下载、更多；顶部字标、底部档案头像；
+- **导航栏**：搜索、首页、直播、指南、电影、剧集、下载、更多；顶部字标、底部档案头像；
   有停靠播放或 Audio Mode 时出现「正在播放」。可设 Floating（胶囊，◀ 唤出，2/4/8 s 后隐藏）或
   Docked（常驻，内容重排）；尺寸 Compact / Normal / Wide（带计数与档案行）/ Extra wide；
   长度适应条目或满高；菜单项 Dynamic（跟随播放列表）或 Static（可勾选隐藏，搜索与更多永不可藏）。
@@ -276,12 +266,14 @@
 | Live TV | 频道号、预览开关与声音、暂停回看与时长、Resume、左右键步长；**Live tuning**：延迟/预缓冲/放弃时间（+按播放列表） |
 | Watching & recording | **Controls & resume**：快进/回看步长、续播、自动下一集；**Multiview & mini player**：Multiview、最大格数、迷你播放器、PiP；**Recording**：录制 padding 与保留一路空闲 |
 | Appearance | 主题、强调色、焦点高亮、玻璃与背景（含环境光晕）、字体与字号、弹窗尺寸、UI 缩放、动画；**Layout**：导航栏、直播/影视布局、面板宽度、指南列宽、浏览与列表、首页、长按菜单、遥控器快捷键 |
-| App | **Profiles**（一行一页：档案、新增、编辑、删除、Kids、PIN、下载权限）、语言、应用图标、启动页、开机/唤醒自启、检查更新、Sports；**Network**：代理、DNS；**Diagnostics**：实测流统计、详细播放日志 |
+| App | **Profiles**（一行一页：档案、新增、编辑、删除、Kids、PIN、下载权限）、语言、应用图标、启动页、开机/唤醒自启、检查更新；**Network**：代理、DNS；**Diagnostics**：实测流统计、详细播放日志 |
 
 - 组内是「行 + 右玻璃上下文面板」：面板说明该行、推荐选项与按键提示；开关/选项/步进器/分段控件直接落在行上，
   只有进入子页才出现箭头。**搜索全部设置**匹配名称并显示 `组 [· 页]` 路径、标题、当前值。
 - 分组、组内分区、行目录只在 `SettingsScreen` / `SettingsPage` 注册表里各有一份；More 的卡片通过稳定的组标识
   （而非位置）打开，子页返回时焦点精确回到原来那一行。
+- **8 组是硬约束**：后续加设置只能在既有组内加行或叶子页；档案能力统一收敛到 `App › Profiles` 一个叶子页，
+  不新增顶层分组、不新增手写搜索条目、不把 `SettingsHelpTable` 扩成按页手写文案表。
 
 ### 9.3 个性化要点
 
@@ -297,8 +289,10 @@
 
 ## 10. 语言与首次启动
 
-- 全新安装先出**语言选择器**（在 Get Started 之前），英文 + 24 个语言资源目录（`values-ar/bn/cs/da/de/es/es-rUS/fr/hi/hu/it/ja/ko/ml/nb/nl/pl/pt/pt-rPT/ru/sv/tr/zh-rCN/zh-rTW`）；
-  字符串主源在 `OwnTV_Core`，新增语言需两侧同步。
+- `QwnTV-mini` 分支只打包 3 个语言（`tools/i18n/locales.json` 的 `packaged` 项）：默认英文 `values`、
+  `values-zh-rCN`、`values-zh-rTW`；`c53612c` 已删除上游 24 个 `values-*` 语言目录，**本分支不恢复多语言包，
+  也不引入手机端的 `strings_mobile.xml` 覆盖与 i18n ratchet**。上游首次启动的语言选择器、复数 / RTL /
+  字体回退行为来自共享 `OwnTV_Core` 源码；字符串主源在 `OwnTV_Core`，新增语言需两侧同步。
 - 首次启动链路：欢迎（含语言）→ 显示（UI 缩放、字号、图标、样例行）→ 免责声明 → **Set up OwnTV** →
   档案 → **添加播放列表** → 导入 → **All set**（此时可加电视指南）。
 - **三条建档路线**：新建档案 / 恢复备份文件 / **从另一台 OwnTV 设备整机复制**（局域网，首次即可用，不必先走完向导）。
@@ -361,15 +355,14 @@ tv.own.owntv
 ├── di/                                  AppModule、PlayerModule
 ├── ui/                                  主题与可复用组件
 ├── player/                              HUD、迷你播放器、字幕/信息浮层、帧率控制、缩放、录制角标
-├── features/                            22 个功能包（见下表）
+├── features/                            21 个功能包（见下表）
 └── BlurredBackdropLoader                搜索页背景模糊（一次性）
 ```
 
 | 包 | 文件数 | 职责 |
 |---|---|---|
 | `shell` | 31 | 导航壳、焦点/返回语义、顶栏胶囊、离线横幅、播放器托管、待处理请求 |
-| `settings` | 58 | 12 组设置、EPG 源、播放列表管理、备份/本地同步、DNS/代理、字体/语言/面板宽度、PIN 门 |
-| `sports` | 15 | 比分/日历/联赛/球队/找频道/体育设置 |
+| `settings` | 59 | 8 组设置（`QUICK/SOURCES/PLAYER/SOUND/LIVE/WATCHING/APPEARANCE/APP`，`App › Profiles` 叶子页）、EPG 源、播放列表管理、备份/本地同步、DNS/代理、字体/语言/面板宽度、PIN 门 |
 | `live` | 11 | 直播列表与预览、追看对话框、换台延迟、隐藏项校正 |
 | `setup` | 8 | 向导、加源、Remote 配对、显示尺寸 |
 | `autostart` | 7 | 开机/唤醒自启、策略与档案门、独立进程组件 |
@@ -414,8 +407,9 @@ tv.own.owntv
 - `versionCode`/`versionName` 由环境变量注入，本地默认 `99999 / 99.99.99`。
 - **签名/密钥不从仓库读**：`owntv-signing.properties`（仓库外）+ 环境变量。
 - `owntv.devTools=true` 才编译开发者页面；`owntv.edgeKey` 是默认元数据 Worker 的共享密钥。
-- **本地联调 core**：在 `~/.gradle/gradle.properties` 设 `owntv.corePath=<OwnTV_Core 路径>`，
-  Gradle 用 `includeBuild` 替换已发布 artifact，改 core 无需先发布。
+- **Core 源码是默认构建依赖**：`settings.gradle.kts` 自动 `includeBuild(../Qwn/OwnTV_Core)`，
+  无需任何 `-P` 参数；Gradle 按 group/module 把已发布 artifact 替换成 Core 源码，改 core 无需先发布。
+  `-Powntv.corePath=<dir>` 可指向别的检出，`-Powntv.coreArtifact=true` 保留制品路径（CI）。
 - **基线配置**：`:baselineprofile` 是纯测试模块，`./gradlew :app:generateBaselineProfile` 在 API 33+ 设备录制冷启动，
   `mergeIntoMain` 合并进主源集；侧载应用靠 `profileinstaller` 在首启安装 ART profile。
 - Gradle 侧已调优：4 GB Gradle heap、8 GB Kotlin daemon、`workers.max=4`、
@@ -428,12 +422,16 @@ tv.own.owntv
 1. **不含内容**：仓库不带任何频道、播放列表、订阅或流；用户对所用源负全部责任。GPLv3。
 2. **一半代码不在本仓库**：`core` / `player-core` 从 OwnTV 公共 Maven 拉取（`ahxn00.github.io/OwnTV_Core/maven`），
    无需账号；因此数据库 schema、同步逻辑、引擎实现、字符串需到 `OwnTV_Core` 查看。
-3. **第三方服务**：TMDB（元数据/预告片）、OpenSubtitles（字幕，需用户自有账号与配额）、ESPN（体育数据）、
+3. **第三方服务**：TMDB（元数据/预告片）、OpenSubtitles（字幕，需用户自有账号与配额）、
    YouTube IFrame（预告片）。均有各自的可用性与条款约束。
 4. **平台限制**：PiP 仅部分电视支持；自动帧率在 Android 12 以下风险较高（会被主动关闭并提示）；
    FairPlay 无法播放；DRM 内容不可录制；Multiview 上限受硬件视频层与账号连接数双重约束。
-5. **文档口径差异**：README 写「26 种语言」，本仓库 `res` 下有 24 个语言变体目录（+ 默认英文）；
-   差异来自 core 的字符串包，改语言相关代码时两侧要对齐。
+5. **文档口径差异**：README 与历史文档写「26 种语言 / 24 个语言变体目录」，`QwnTV-mini` 实际只打包
+   3 个语言目录（默认英文 + 简 / 繁中文，见 §10）；差异来自 core 的字符串包与 mini 分支裁剪，
+   改语言相关代码时以 `tools/i18n/locales.json` 的 `packaged` 为准。
+6. **两端边界**：本仓库是 TV 端交付主线，多档案与自启 / 遥控器快捷键 / 频道翻页等 TV 专属能力只在这里实现；
+   手机端 `OwnTV_Mobile` 保持单档案与触摸优先形态，两端只共享 `OwnTV_Core`，不做 app 层回填或 UI 移植。
+   详见 `docs/alignment-to-own-project-zh.md`。
 
 ---
 
@@ -446,4 +444,7 @@ tv.own.owntv
 | `extras/OwnTV_Master_Product_Brief.md` | 已建成功能与架构的完整参考（英文，622 行） |
 | `CHANGELOG.md` | 版本级新增/修复清单，含 Unreleased |
 | `docs/internationalization.md` | 国际化体系（1900 行）与各阶段 i18n 文档 |
-| **本文** | 中文功能整理 + 代码位置映射，供开发/交接/评审快速定位 |
+| `docs/alignment-to-own-project-zh.md` | 两端并行维护的决策、职责边界、分阶段实施与风险清单 |
+| `docs/multi-profile-contract-zh.md` | TV 端多档案能力清单、实现位置与回归契约 |
+| `docs/settings-simplification-zh.md` | 设置 12 组 → 8 组的收敛规格 |
+| **本文** | 中文功能整理 + 代码位置映射，供开发/交接/评审快速定位（Sports 已于 2026-11-15 下线，见方案文档 §13） |

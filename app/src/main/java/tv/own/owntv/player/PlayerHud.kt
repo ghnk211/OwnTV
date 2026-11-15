@@ -212,15 +212,6 @@ fun PlayerHud(
     // Settings → "Left and right rewind live TV": with the controls hidden, Left/Right on a
     // catch-up channel scrub instead of opening the lists. Films always seek.
     liveLeftRightRewinds: Boolean = false,
-    // Sports Hub — only for a channel started from a match; all null means the plain Live player.
-    // The match's score line under the channel name, drawn only while the controls are up.
-    matchLine: (@Composable () -> Unit)? = null,
-    // The other channels showing the match, and their count for the tool's label.
-    onOtherChannels: (() -> Unit)? = null,
-    otherChannelsCount: Int = 0,
-    // The match page.
-    // A goal toast for another followed match is up: OK switches to it instead of showing the controls.
-    onToastOk: (() -> Unit)? = null,
     // Live only: the Sources button and its list. Null hides the button.
     sources: HudSources? = null,
     modifier: Modifier = Modifier,
@@ -555,7 +546,7 @@ fun PlayerHud(
             }
             // Player buttons: OK with the controls hidden. No plan (the default) leaves OK to the code below.
             if (isPlayerOkKey(e.key) && e.type != KeyEventType.Unknown) {
-                val okPlan = if (controlsVisible || showNextCard || inert || dialog != HudDialog.NONE || digitsActive || onToastOk != null) null
+                val okPlan = if (controlsVisible || showNextCard || inert || dialog != HudDialog.NONE || digitsActive) null
                     else playerOkPlan(remoteOptions, PlayerOkTargets(channelList = onOpenChannelList != null, guide = isLive, programmeInfo = isLive))
                 val ok = okPress.onKey(e.type == KeyEventType.KeyDown, e.nativeKeyEvent.repeatCount, e.nativeKeyEvent.eventTime, okPlan)
                 if (ok is PlayerOkResult.Fire) when (ok.outcome) {
@@ -608,8 +599,6 @@ fun PlayerHud(
                     e.key.horizontalDirection(layoutDirection) == HorizontalDirection.START -> { onOpenChannelList(); true }
                 onOpenHistoryList != null && !controlsVisible &&
                     e.key.horizontalDirection(layoutDirection) == HorizontalDirection.END -> { onOpenHistoryList(); true }
-                onToastOk != null && !controlsVisible &&
-                    (e.key == Key.DirectionCenter || e.key == Key.Enter || e.key == Key.NumPadEnter) -> { onToastOk(); true }
                 controlsVisible -> { wakeTick++; false }
                 else -> false
             }
@@ -693,7 +682,7 @@ fun PlayerHud(
             TopBar(
                 player, isLive, listOfNotNull(engineChip) + streamChips.ifEmpty { listOfNotNull(videoRes) }, duration, onBack,
                 modifier = Modifier.align(Alignment.TopStart),
-                below = matchLine,
+                below = null,
                 trailing = if (error == null) liveEpgCard else null,
                 // Hidden behind an error overlay along with the rest of the chrome: a clock ticking
                 // over a failure message just draws the eye to the wrong thing.
@@ -720,7 +709,6 @@ fun PlayerHud(
                     liveGaps = liveGaps,
                     onOpenJumpBack = if (onJumpBack != null) { { dialog = HudDialog.JUMP_BACK } } else null,
                     onPreviousChannel = onPreviousChannel,
-                    onOtherChannels = onOtherChannels, otherChannelsCount = otherChannelsCount,
                     hasSources = sources != null,
                     compatMode = compatMode, onToggleCompatMode = toggleCompat,
                     vodOnExo = vodOnExo, onToggleVodEngine = toggleVod,

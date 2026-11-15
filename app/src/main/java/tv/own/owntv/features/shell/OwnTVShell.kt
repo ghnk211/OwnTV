@@ -218,9 +218,6 @@ fun OwnTVShell(
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var downloadsEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var moreEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
-    var sportsEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
-    // Home's Live sports row opens a match page through the same request the player's Match button uses.
-    val sportsMatchRequests = koinInject<tv.own.owntv.features.sports.SportsPlayback>()
     // More › Settings opens Settings at a group, or with its search open.
     var settingsStart by remember { mutableStateOf<tv.own.owntv.features.shell.components.SettingsStart?>(null) }
     // The playlist pill's place on screen, where the playlist menu redraws it above its scrim.
@@ -1226,10 +1223,6 @@ fun OwnTVShell(
                             onEpgAddConsumed = { openEpgAdd = false },
                             start = settingsStart,
                             onStartConsumed = { settingsStart = null },
-                            onOpenSportsTeam = { t ->
-                                sportsMatchRequests.pendingTeam.value = t
-                                onSelectSection(MainSection.SPORTS)
-                            },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
@@ -1287,10 +1280,6 @@ fun OwnTVShell(
                             firstRowFocusRequester = homeFirstRowFocus,
                             // Beside the resting capsule; a docked rail already reserves its own width.
                             onEntryHook = { homeEntry = it },
-                            onOpenMatch = { m ->
-                                sportsMatchRequests.pendingMatch.value = m to null
-                                onSelectSection(MainSection.SPORTS)
-                            },
                             contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -1388,16 +1377,6 @@ fun OwnTVShell(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                        selectedSection == MainSection.SPORTS -> tv.own.owntv.features.sports.SportsScreen(
-                            onPlayChannel = { ch, zap -> scope.launch { if (liveVm.ensurePlayingByIdAsync(ch.id, zap)) openFullscreen(MainSection.LIVE_TV) } },
-                            onAddPlaylist = { onSelectSection(MainSection.SETTINGS) },
-                            onChildFocused = { focusedLayer = ShellLayer.CONTENT },
-                            onEntryHook = { sportsEntry = it },
-                            active = playerMode == PlayerMode.NONE,
-                            contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-
                         selectedSection == MainSection.EPG -> EpgScreen(
                             onFullscreen = { openFullscreen() },
                             onPlayChannel = guidePlayChannel,
@@ -1468,7 +1447,6 @@ fun OwnTVShell(
                     MainSection.MOVIES, MainSection.SERIES -> vodEntry
                     MainSection.DOWNLOADS -> downloadsEntry
                     MainSection.MORE -> moreEntry
-                    MainSection.SPORTS -> sportsEntry
                     else -> null
                 },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
@@ -1666,31 +1644,6 @@ fun OwnTVShell(
                 // position on the other engine) rather than Live TV's compatibility toggle, which would
                 // re-tune the live stream and jump the user to the current programme.
                 val isTunedLive = isLiveChannel && !catchupActive
-                // Sports Hub: the extras exist only while the playing channel is one of the match's.
-                val sportsPlayback = koinInject<tv.own.owntv.features.sports.SportsPlayback>()
-                val sportsSession by sportsPlayback.session.collectAsStateWithLifecycle()
-                val sportsConfig by settingsRepo.activeSportsConfig.collectAsStateWithLifecycle(tv.own.owntv.core.sports.SportsConfig())
-                val matchSession = sportsSession?.takeIf { s -> isTunedLive && s.options.any { it.channel.id == previewChannel?.id } }
-                var showOtherChannels by remember { mutableStateOf(false) }
-                var goalToast by remember { mutableStateOf<tv.own.owntv.core.sports.MatchAlert?>(null) }
-                LaunchedEffect(isTunedLive) { if (isTunedLive) sportsPlayback.goals().collect { goalToast = it } }
-                LaunchedEffect(goalToast) { if (goalToast != null) { kotlinx.coroutines.delay(GOAL_TOAST_MS); goalToast = null } }
-                // A goal elsewhere: play that match's best channel if Find channels already found one,
-                // else open its match page, where they can be found.
-                val switchToMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = { m ->
-                    goalToast = null
-                    scope.launch {
-                        val options = sportsPlayback.channelsFor(m)
-                        val best = options.firstOrNull()
-                        if (best == null) {
-                            sportsPlayback.pendingMatch.value = m to previewChannel
-                            exitPlayer()
-                            onSelectSection(MainSection.SPORTS)
-                        } else if (liveVm.ensurePlayingByIdAsync(best.channel.id, options.map { it.channel })) {
-                            sportsPlayback.start(m, options)
-                        }
-                    }
-                }
                 PlayerHud(
                     player = if (liveOnExo) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
                     onBack = exitPlayer,
@@ -1698,7 +1651,7 @@ fun OwnTVShell(
                     onAudioMode = toAudioMode,
                     // The channel-list overlay draws ABOVE the HUD; while it's open the HUD goes inert so
                     // its hide/error focus grabs can't yank D-pad focus off the overlay.
-                    inert = showChannelList || showHistoryList || showCategoryBrowser || showSubtitleSearch || showLocalSubPicker || showOtherChannels,
+                    inert = showChannelList || showHistoryList || showCategoryBrowser || showSubtitleSearch || showLocalSubPicker,
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
                     onOpenChannelList = if (isTunedLive && liveCanZap) { { showChannelList = true } } else null,
@@ -1806,12 +1759,6 @@ fun OwnTVShell(
                             }
                         }
                     } else null,
-                    matchLine = matchSession?.takeIf { sportsConfig.scoreInInfoBar }?.let { s ->
-                        { tv.own.owntv.features.sports.MatchScoreLine(sportsPlayback, s.match, sportsConfig.spoilerFree) }
-                    },
-                    onOtherChannels = matchSession?.takeIf { it.options.size > 1 }?.let { { showOtherChannels = true } },
-                    otherChannelsCount = (matchSession?.options?.size ?: 1) - 1,
-                    onToastOk = goalToast?.let { a -> { switchToMatch(a.match) } },
                     // The channel's other versions, read when the button is pressed; a pick is an
                     // ordinary tune, the same as picking it in the channel list.
                     sources = previewChannel?.takeIf { isTunedLive }?.let { ch ->
@@ -1819,19 +1766,6 @@ fun OwnTVShell(
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
-                goalToast?.let { a ->
-                    tv.own.owntv.features.sports.GoalToast(a, Modifier.align(androidx.compose.ui.Alignment.TopEnd).padding(top = 45.mpx, end = 60.mpx))
-                }
-                if (showOtherChannels) {
-                    val s = matchSession
-                    if (s == null) showOtherChannels = false
-                    else tv.own.owntv.features.sports.OtherChannelsPanel(
-                        session = s,
-                        playingId = previewChannel?.id,
-                        onSwitch = { session, i -> liveVm.ensurePlaying(session.options[i].channel); showOtherChannels = false },
-                        onDismiss = { showOtherChannels = false },
-                    )
-                }
                 // OpenSubtitles search overlay (movies/episodes) — drawn above the HUD; the HUD is inert
                 // while it's open so the D-pad stays on the overlay.
                 if (showSubtitleSearch) {
@@ -2086,7 +2020,6 @@ fun OwnTVShell(
 }
 
 /** A goal toast stays this long. */
-private const val GOAL_TOAST_MS = 8_000L
 
 /** Long enough to read "Auto-matched 12 channels. 40 channels need review." from the sofa. */
 private const val EPG_MATCH_TOAST_MS = 6_000L

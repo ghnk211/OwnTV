@@ -69,20 +69,6 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
     val activeRecordings by recordingTracker.active.collectAsStateWithLifecycle()
     val lastCompleted by catalogTracker.lastCompleted.collectAsStateWithLifecycle()
     val lastTrendingCompleted by trendingTracker.lastCompleted.collectAsStateWithLifecycle()
-    val sportsTracker: tv.own.owntv.core.sports.SportsActivityTracker = koinInject()
-    val sportsRebuild by sportsTracker.rebuild.collectAsStateWithLifecycle()
-    // A failed rebuild is said once, for 5 s, when it happens — not again each time the pill returns.
-    var sportsSeen by remember { mutableStateOf(sportsRebuild) }
-    var sportsFailed by remember { mutableStateOf(false) }
-    LaunchedEffect(sportsRebuild) {
-        val was = sportsSeen
-        sportsSeen = sportsRebuild
-        if (sportsRebuild == tv.own.owntv.core.sports.RebuildState.Failed && was is tv.own.owntv.core.sports.RebuildState.Running) {
-            sportsFailed = true
-            delay(5000)
-            sportsFailed = false
-        }
-    }
     val named = rememberPillNamedTitles(downloadTracker, recordingTracker)
 
 
@@ -91,7 +77,7 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
     var currentTrendingCompleted by remember { mutableStateOf<TrendingActivityTracker.CompletedBuild?>(null) }
 
     val anyActive = activeCatalog.isNotEmpty() || activeEpg.isNotEmpty() || activeTrending.isNotEmpty() ||
-        activeDownload != null || activeRecordings.isNotEmpty() || sportsRebuild is tv.own.owntv.core.sports.RebuildState.Running
+        activeDownload != null || activeRecordings.isNotEmpty()
 
     LaunchedEffect(lastCompleted) {
         val completed = lastCompleted ?: return@LaunchedEffect
@@ -130,7 +116,7 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
         }
     }
 
-    if (!anyActive && currentCompleted == null && currentTrendingCompleted == null && !sportsFailed) return
+    if (!anyActive && currentCompleted == null && currentTrendingCompleted == null) return
 
     // Catalog syncs first (they're the slower, more interesting ones), then guides, in a stable
     // order so a row doesn't jump around as progress updates arrive.
@@ -147,12 +133,11 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
             add(SyncLine.TrendingDetail(it))
         }
         activeEpg.values.sortedBy { it.sourceId }.forEach { add(SyncLine.Epg(it)) }
-        if (sportsRebuild is tv.own.owntv.core.sports.RebuildState.Running) add(SyncLine.Sports)
     }
     val shown = rows.take(MAX_ROWS)
     val hidden = rows.size - shown.size
     val lineCount = shown.size + (if (hidden > 0) 1 else 0) +
-        (if (currentCompleted != null) 1 else 0) + (if (currentTrendingCompleted != null) 2 else 0) + (if (sportsFailed) 1 else 0)
+        (if (currentCompleted != null) 1 else 0) + (if (currentTrendingCompleted != null) 2 else 0)
 
     // The Stage glass card (as the top-right pills): fully round for one line, a rounded card for a stack.
     val radius = if (lineCount > 1) 22.mpx else 30.mpx
@@ -197,15 +182,6 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        if (sportsFailed) {
-            Text(
-                stringResource(R.string.sports_rebuild_failed),
-                style = stageText(16, 600),
-                color = StageColors.ItemText,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
         currentTrendingCompleted?.let { completed ->
             Text(
                 trendingCompletedLine(completed),
@@ -239,12 +215,10 @@ private sealed interface SyncLine {
     data class Trending(val build: TrendingActivityTracker.ActiveBuild) : SyncLine
     data class TrendingDetail(val build: TrendingActivityTracker.ActiveBuild) : SyncLine
     data class Epg(val sync: EpgActivityTracker.ActiveEpgSync) : SyncLine
-    data object Sports : SyncLine
 }
 
 @Composable
 private fun SyncLine.text(): String = when (this) {
-    SyncLine.Sports -> stringResource(R.string.sports_rebuilding)
     is SyncLine.Catalog -> {
         val stage = sync.stage
         val counts = stage?.let {

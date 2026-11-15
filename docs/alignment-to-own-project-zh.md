@@ -456,3 +456,215 @@ TV 端多档案能力保持完整，不在本轮新增或删减：
 | 手机端单档案化提交 | `OwnTV_Mobile@057ea24f Slim to three languages, drop Sports, and lock one profile` |
 | 分支与提交流程 | `Own/项目说明.txt` 第 3、4 条；`OwnTV_Mobile/docs/Core源码集成方案.md` §4、§6、§7 |
 | 本机 Core 检出 | `E:/develop/ideaPoject/git/` 下无 `OwnTV_Core`；只有 `Own/OwnTV_Core`（`mobile` 分支） |
+
+---
+
+## 12. 实施记录（2026-11-14，v2.1）
+
+> 本章记录本文的首次实施结果。正文 §0–§11 是决策依据，予以保留；**与本章冲突的事实以本章实测为准**，
+> 待下一版修订时统一回填正文。本轮不改功能代码、不改 Core 版本号。
+
+### 12.1 本机路径映射
+
+文档中的 `E:\develop\ideaPoject\git\` 在本机对应 `D:\AndroidStudioProjects\git\Qwn\`（TV 仓单独检出）：
+
+| 文档路径 | 本机实际路径 |
+|---|---|
+| `E:\...\git\OwnTV` | `D:\AndroidStudioProjects\git\OwnTV-mini` |
+| `E:\...\git\Own\OwnTV_Mobile` | `D:\AndroidStudioProjects\git\Qwn\OwnTV_Mobile` |
+| `E:\...\git\Own\OwnTV_Core` | `D:\AndroidStudioProjects\git\Qwn\OwnTV_Core` |
+| `E:\...\git\Own\项目说明.txt` | `D:\AndroidStudioProjects\git\Qwn\项目说明.txt` |
+| `Own/keyStore` | `D:\AndroidStudioProjects\git\Qwn\keyStroe`（目录名即如此） |
+| JDK / Gradle | `D:\jdk`、`D:\android\gradle` |
+| 测试源目录 | `C:\Users\Admin\WorkBuddy\2026-11-08-22-47-57` |
+
+### 12.2 P0 基线登记（§7 P0 第 1、5 项）
+
+三仓按 §9 各 `fetch` 自己的 fork（TV `origin`、Mobile `fork`、Core `origin`），均无新提交、工作区无异常：
+
+| 仓库 | 分支 @ HEAD | 状态 |
+|---|---|---|
+| `OwnTV-mini` | `QwnTV-mini` @ `422181d Settings: fold 12 groups into 8 and open More cards by stable group id` | 实施前干净；本轮仅有文档改动 |
+| `Qwn/OwnTV_Mobile` | `mobile-mini` @ `e2e42b5 build: sync vendored core (b3549819)` | 干净，「TVBOX 下载接入 Core」P0 **已收口** |
+| `Qwn/OwnTV_Core` | `mobile` @ `b3549819 feat(download): resolve app-owned sources at transfer time` | 干净，Room `version = 55`，`coreVersion 1.0.70` |
+
+`OwnTV_Mobile/docs/core-changes.md` 已记录 Core 改动回填（`e0556f0f..b3549819`）、逐文件校验与
+`git subtree pull … --squash` 同步，vendor 快照的 Room 也为 v55。§2.1 的「11 改 + 8 未跟踪 / P0 待收口」
+与 §0.4 的「Core mobile 仍 v54，v55 在 vendor 工作区」均已是历史状态。
+
+### 12.3 P0 编译验证（§7 P0 第 2 项）—— **硬门槛未通过**
+
+- 环境：Gradle 9.7.1（工程内 wrapper dist）、AGP 9.4.0 / Kotlin 2.4.20 / `compileSdk 37`、
+  JDK 25 工具链。foojay 首次尝试联网下载 JDK 25 失败，改为本地 `D:/jdk/jdk-25` 探测
+  （`org.gradle.java.installations.paths` + `auto-download=false`）后工具链正常。
+- 命令：`:app:compileStandardDebugKotlin --no-build-cache --offline --console=plain`，
+  使用工程内临时 `GRADLE_USER_HOME` 与只读依赖缓存，**未设置 `owntv.corePath`**（遵守 R3）。
+- 结果：**FAILED**。`> Task :app:compileStandardDebugKotlin` 真实执行，报出大量 `Unresolved reference`
+  （`AppModule.kt:57` 的 `viewModelOf` 无匹配为首因，级联到 `R.string.settings_*`、
+  `PlayerRemoteOptions`、`MenuLayout`、`SealedCategoryAction`、`ChannelVersion` 等）。
+- 证据：线上 `core-1.0.69.aar` 与本机缓存 sha256 同为 `11a16d0d…f133`，其 `R.txt` **不含**
+  `settings_customize_settings_pin` / `player_tool_sources` / `sports_hint_day_matches`，`classes.jar`
+  **不含**上述类；这些类在 `Qwn/OwnTV_Core/mobile` 中存在，而该分支已删除 Sports 资源。
+  上游 Maven 的 `core` 版本列表已有 `1.0.70`、`1.0.71`（latest `1.0.71`，`lastUpdated 20261109100817`）。
+  补验 `1.0.71` 制品（sha256 `ca9c9dfc…d123f1`）：`classes.jar` 已含上述 4 个类，`R.txt` 覆盖抽样 11 个
+  缺失字符串中的 10 个（Sports / 帧率 / 菜单文字 / 录制 / 同步 / 播放器源）；仅
+  `settings_customize_settings_pin` 仍缺。该引用**不是 8 组改动新增**（最早见 `2cdc3f1`，`422181d`
+  只改了它的分组参数），因此 Core 升级立项时还需一并盘点 app 层 / Core 的字符串缺口。
+- 结论：**不是缓存、不是网络、不是 8 组改动引入**，而是 `gradle/libs.versions.toml` 固定的
+  `owntvCore = "1.0.69"` 落后于当前 app HEAD 所依赖的 Core API。§2.3 / R2 / R3 要求 Core 升级单独立项，
+  本轮**不擅自改版本号、不用 `Qwn/OwnTV_Core` 顶替**。
+- 诊断性尝试：`-Powntv.corePath=D:/…/Qwn/OwnTV_Core` 走源码复合构建，在依赖解析阶段因 offline 缺
+  `tv.own.owntv:libmpv:2026.11.0` 中止；且该分支已删 Sports 资源，按 §2.3 结论也不应作为 TV 端底座。
+- 影响：P0 第 2 项记为「未通过」；P1 的编译 / 单测验收、P2 回归、P4 出包均不得记为通过。
+
+### 12.4 门禁结果
+
+| 检查 | 结果 |
+|---|---|
+| `tools/i18n/check_hardcoded_strings.py verify --bootstrap` | OK（45 baseline + 1427 safe entries） |
+| `tools/i18n/check_number_locale.py` | OK（285 Kotlin 文件、3 处已审 display call） |
+| `tools/i18n/check_text_overflow.py` | OK（285 Kotlin 文件、0 Clip 例外） |
+| Gradle `:app:verifyI18nLiterals` | 成功（编译任务链中执行） |
+| `:app:testStandardDebugUnitTest` | **未执行**：受 12.3 编译阻塞，JVM 单测依赖 app 编译产物 |
+
+### 12.5 本轮交付物
+
+| 项 | 位置 | 对应文档条目 |
+|---|---|---|
+| TV 端多档案契约（新增） | `docs/multi-profile-contract-zh.md` | §7 P0 第 4 项 |
+| 功能文档收尾 | `docs/features-zh.md`（§8 / §9.2 / §10 / §13.1 / §15 / 附表） | §7 P3 |
+| README 两端边界 | `README.md`「Maintenance boundary」 | §7 P3 |
+| 约束补条 | `Qwn/项目说明.txt` 追加第 9 条 | §1 建议项（见 12.7） |
+| 设置 8 组 patch 归档 | `.workbuddy/archive/settings-8groups-422181d.patch`（90 KB，仅 app 代码 + i18n 基线）与完整 `format-patch`（298 KB） | §7 P0 第 3 项；本地归档、不进仓库 |
+| 实施记录 | 本章 | §7 P0 第 5 项 |
+
+`tag` 按 §7 P0 第 3 项由人工执行，本轮未打 tag。
+
+### 12.6 阻塞与下一步
+
+1. **P0（阻塞项）**：立项处理 TV 端 Core 版本——评估升级 `owntvCore` 到 `1.0.71`（已验证其制品含缺失的
+   4 个 Core 类与绝大多数字符串），并补齐 `settings_customize_settings_pin` 等剩余资源缺口；同时核对
+   Sports / Weather / 多语言 API，完成迁移后重跑 `:app:compileStandardDebugKotlin` 与 JVM 单测。
+   **该项不做，P1–P4 无法验收。**
+   → **2026-11-15 已按 §13 变更**：不再升级 `1.0.71` 制品，改为删除 Sports + `Qwn/OwnTV_Core` 源码复合构建，
+   编译与 250 个 JVM 单测已通过；本节余下项仍待人工执行。
+2. `Qwn/项目说明.txt` 实际只有 8 条（§1 表格按 10 条编写）；§1 建议的「第 11 条」实为**第 9 条**，已按原意补入。
+3. `OwnTV_Mobile/docs/features-zh.md` 在手机端仓库中**不存在**，§7 P3 的该项未执行，需确认是新建还是并入其它文档。
+4. P2 真机 / 模拟器回归、P4 两端出包与安装验证需设备与人工放行；本机未执行。
+5. `app/build.gradle.kts` 的 release 签名属性默认指向 `E:/MEGA/CODE/OwnTV_Gradle/owntv-signing.properties`
+   （本机不存在），实际 keystore 在 `Qwn/keyStroe`；出正式包前需注入签名属性，否则产物为 unsigned。
+6. 本轮文档改动**未提交**（不 push、不打 tag），待确认后按 §9 以 `docs:` 前缀落库。
+
+### 12.7 正文事实校正清单（下一版修订时回填）
+
+| 正文位置 | 原记载 | 实测 |
+|---|---|---|
+| §2.1 / §0.4 | TV @ `9a05e57`，11 改 + 8 未跟踪，设置 8 组待提交 | 已提交为 `422181d`，实施前工作区干净，P1 的提交项已完成 |
+| §2.1 / §0.4 | Core `mobile` @ `e0556f0f`、Room v54；v55 在 vendor 工作区 | `b3549819`、Room v55；Core 与 vendor 均为 v55 |
+| §2.1 | 手机端「P0 改动待收口」 | `e2e42b5` 已收口，`docs/core-changes.md` 有完整记录 |
+| §1 | 「项目说明.txt 10 条」+ 建议补第 11 条 | 实际 8 条 + 本轮补第 9 条；keystore 目录名为 `keyStroe`，无第 9/10 条原文 |
+| §2.2 / §5.4 | TV 端「中文 only」/「中文单语言」 | `tools/i18n/locales.json` 的 `packaged` 为 3 项（默认英文 + `zh-rCN` + `zh-rTW`）；`c53612c` 删除的是上游 24 个 `values-*` 目录 |
+| §2.3 / R2 / R3 | TV 端固定 `1.0.69` 可编译 | 当前 app HEAD 用 `1.0.69` 编译失败（见 12.3）；上游已有 `1.0.70` / `1.0.71` |
+| 附录 A | `ProfileSettingsRows.kt` 在 `features/shell/components/` | 实际在 `features/settings/`（162 行） |
+| §13.1 相关 | 功能文档写「12 组设置 / 26 语言」 | 已按 8 组与 3 语言修正（见 `docs/features-zh.md`） |
+
+---
+
+## 13. 决策变更（2026-11-15，v3）：Sports 下线 + Core 源码复合构建
+
+> 用户决策：**TV 端改用 `Qwn/OwnTV_Core` 源码复合构建；缺失的 Sports 资源对应功能从本分支直接删除。**
+> 本章是最新口径；§0–§12 保留为决策与实施历史，冲突处以本章为准。
+
+### 13.1 与前序结论的关系
+
+| 前序结论 | v3 处理 |
+|---|---|
+| §0.3 / §2.2 / §5.4「TV 端 Sports 保留、Core 固定 `1.0.69`、不做跨端移植」 | **被取代**：Sports 从 TV 端下线；TV 端不再固定制品，改为与手机端共享 `OwnTV_Core/mobile` 源码 |
+| §2.3 / R2 / R3 / R8「Core 升级须单独立项、不用 `Own/OwnTV_Core` 顶替」 | **不再适用**：本次即用户指定的复合构建立项；2026-11-15 起 `includeBuild(../Qwn/OwnTV_Core)` 已固化为 `settings.gradle.kts` 默认行为，无需 `-Powntv.corePath` |
+| §12.3 / §12.6 第 1 项「P0 编译门槛未通过，需升级到 `1.0.71`」 | **已解决，但路径不同**：不升制品版本，改为删 Sports + 源码复合构建；P0 硬门槛由本章验收 |
+| §3 两端 app 层不共享、多档案只在 TV 端、TV 专属能力不移植、只有 Core 是共享资产 | **继续有效**，本轮未改这些边界 |
+
+### 13.2 构建口径（2026-11-15 二次调整：默认复合构建，零 `-P` 参数）
+
+**不再需要任何 `-P` 参数**：`settings.gradle.kts` 默认 `includeBuild(../Qwn/OwnTV_Core)`
+（相对本仓根目录解析，即 `D:/AndroidStudioProjects/git/Qwn/OwnTV_Core`）。
+
+```
+gradle :app:compileStandardDebugKotlin :app:testStandardDebugUnitTest
+```
+
+- `includeBuild` 按 group/module 替换 `tv.own.owntv:core` / `:player-core`；`gradle/libs.versions.toml`
+  的 `owntvCore = "1.0.69"` 只是制品回退路径的占位版本，默认路径下不生效，**未改**。
+- 解析规则（`settings.gradle.kts`）：`-Powntv.coreArtifact=true` → 走发布制品（CI / 无 Core 检出的机器）；
+  `-Powntv.corePath=<dir>` → 覆盖默认目录；否则自动使用同级 `../Qwn/OwnTV_Core`；
+  该目录不存在时打印警告并回退制品（本机存在，不会触发）。
+- 本机 `GRADLE_USER_HOME=D:\android\gradle`（用户级环境变量，项目说明第 6 条），其中已有
+  JDK 25 探测（`org.gradle.java.installations.paths`）、代理、Gradle 9.7.1 与
+  `libmpv:2026.11.0` 缓存，因此裸命令即可构建，不再需要 `GRADLE_RO_DEP_CACHE`。
+- 工程内 `.gradle-cache/gradle.properties` 中过期的 `owntv.corePath=D:/AndroidStudioProjects/git/OwnTV_Core`
+  （该目录不存在）已删除，避免覆盖默认解析。
+- Core 源码：`mobile` @ `b3549819`，Room v55，`coreVersion 1.0.70`；工具链为
+  Gradle 9.7.1 / AGP 9.4.0 / Kotlin 2.4.20 / `compileSdk 37` / JDK 25（见 §12.3）。
+- 旧的 `1.0.69` / `1.0.71` 制品不再是本分支的构建通道。
+
+### 13.3 删除范围（Sports 下线）
+
+- 整目录删除 `app/src/main/java/tv/own/owntv/features/sports/`：**15 个文件 / 5268 行**
+  （Hub / Calendar / Leagues / Match / Team / Settings / ViewModel / Playback 等）。
+- 外部引用清理（21 个 Kotlin 文件、共 66 组精确替换）：
+  `OwnTVApp`（启动自重建）、`di/AppModule`（3 个 Koin 绑定）、`HomeScreen` / `HomeRowText` /
+  `HomeSettingsScreen`（首页体育行与 `HomeRow.LIVE_SPORTS`）、`SettingsPage` / `SettingsScreen` /
+  `NavigationSettingsPopup`（`App › Sports` 页面、搜索条目、导航隐藏项）、`StageRail`（导航项）、
+  `OwnTVShell`（Sports 内容分支、播放会话、比分行、进球提示、换台面板）、`SyncStatusPill`（重建状态行）、
+  `PlayerHud` / `PlayerHudChrome`（比分行、Other channels、Goal toast 参数链）、`OwnTVIcon.SPORTS`。
+- Core mobile 已删 `MainSection.SPORTS` / `HomeRow.LIVE_SPORTS` / `StageGlyph.SPORTS` 及全部
+  `R.string.sports_*`，因此 app 侧穷尽 `when` 分支也一并删除，不留兜底。
+- `MoveOrderOverlay` 原先共用 `sports_move_instructions`，改为 app 层新增的通用
+  `move_order_instructions`（`values` / `values-zh-rCN` / `values-zh-rTW` 三语言各 1 条）。
+- `tools/i18n/safe_literals.txt` 用 `prune-safe` 清理 144 行 stale 分类；`hardcoded_baseline.txt`
+  保持 45 条不变。频道分类着色 `GenreColor` 的 sport 关键词、测试中的 `"Sports"` 频道名均**保留**（非功能引用）。
+
+### 13.4 顺带适配的 Core API 差异（非 Sports，复合构建必需）
+
+| 差异 | 处理 |
+|---|---|
+| `SourceType.TVBOX` 新增，`ManageSourcesScreen` 两处 `when` 不穷尽 | `typeName` 增加 `TVBOX -> R.string.setup_tvbox`；`countsLabel` 增加 TVBOX 全 0 计数分支（TVBOX 走索引、不走同步） |
+| `SealedCategoryAction.run` 新增 `play: (LiveKey) -> Unit` | Live / Movies / Series 三处调用补空回调；TV 端 UI 不产生 `PLAY` 动作 |
+| `R.string.content_key_schedule` 在 Core mobile 已删 | 直播与搜索的按键提示改用 `content_key_programmes` |
+| 导航列表与 `StageRailOrder` 的级联类型推断错误 | 随 Sports 引用删除自然消除 |
+
+### 13.5 验证结果（2026-11-15 实测）
+
+| 检查 | 结果 |
+|---|---|
+| 复合构建 `:app:compileStandardDebugKotlin` | **BUILD SUCCESSFUL**（1m 43s，实际执行编译；仅 1 条与本次无关的 `ChannelLogoTile` 恒真警告） |
+| `:app:testStandardDebugUnitTest` | **250 tests / 0 failures / 0 errors / 0 skipped**（36 个报告文件，含 `SettingsSearchCoverageTest`） |
+| `check_hardcoded_strings.py verify --bootstrap` | OK（45 baseline + 1283 safe；prune 后无 STALE） |
+| `check_number_locale.py` / `check_text_overflow.py` | OK（270 Kotlin 文件 / 3 reviewed / 0 Clip 例外） |
+| Gradle `:app:verifyI18nLiterals` | 随 `preBuild` 通过 |
+| 代码残留复核 | `grep -rniE 'sport|…' app/src/main/java` 过滤误报后 **0 命中** |
+| 改动规模 | 44 个已跟踪文件：+193 / −5696 行；另新增 `docs/multi-profile-contract-zh.md` |
+| 基线编译证据 | `.workbuddy/archive/baseline-sports-compile.log`（2950 条错误，删除前）；`.workbuddy/archive/sports-removed-compile.log`（SUCCESS，删除后） |
+| **零 `-P` 参数构建**（二次调整后） | **BUILD SUCCESSFUL**（2m 30s，日志 `.workbuddy/archive/no-corepath-compile.log`）：未传 `-Powntv.corePath`、未设 `GRADLE_RO_DEP_CACHE`，仅用用户级 `GRADLE_USER_HOME=D:\android\gradle`；日志含 `:OwnTV_Core:core:*` / `:OwnTV_Core:player-core:*` 任务、无制品回退警告，Kotlin 编译与单测全部 `UP-TO-DATE`（证明 classpath 与带参数时一致） |
+
+### 13.6 文档同步与遗留
+
+**已同步**：`docs/features-zh.md`（删 §5.5 体育、导航/设置/模块计数/第三方服务）、
+`docs/multi-profile-contract-zh.md`（Core 口径与回归矩阵）、`README.md`（2026-11-15 更新段）、
+`CHANGELOG.md`（Unreleased 一条 bullet）、`extras/USER_GUIDE.md`（Sports 章节替换为下线说明）、
+本章。
+
+**遗留 / 影响**：
+
+1. **构建强依赖已消除**（2026-11-15 二次调整）：`settings.gradle.kts` 默认 includeBuild 同级
+   `../Qwn/OwnTV_Core`，零 `-P` 参数构建已通过（见 §13.5）。剩余影响只在 **CI**：`android.yml`
+   没有 Core 检出，会走制品回退路径；该路径当前无法编译本分支源码，需补 Core 检出或等上游发布
+   匹配的制品。
+2. **用户数据孤儿**：`navMenuHidden` 中的 `"SPORTS"`、Quick 钉选 `"tab_SPORTS"`、`SportsConfig` 偏好、
+   旧深链 `settings/APP/sports`（`fromRoute` 返回 null）残留但不崩溃；未做数据迁移。
+3. **功能降级**：Core `PLAY` 分类动作在 TV 端为空实现；`content_key_schedule` 提示改为
+   `Programs` 文案。二者是编译适配，不是产品需求。
+4. `extras/OwnTV_Master_Product_Brief.md` 及其它历史方案文档仍保留 Sports 描述（历史资料，未清）。
+5. P2 真机 / 模拟器回归、P4 出包与签名注入仍未执行；签名属性默认路径见 §12.6 第 5 项。
+6. 本轮代码与文档改动**未提交**（不 push、不打 tag）；建议按 §9 拆成
+   `refactor(tv): drop Sports and build against shared Core source` 与 `docs:` 两次提交。

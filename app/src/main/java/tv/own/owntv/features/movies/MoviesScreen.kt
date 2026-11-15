@@ -1109,7 +1109,7 @@ fun MoviesScreen(
     }
     tv.own.owntv.features.categorylock.CategoryLockPrompts(
         tv.own.owntv.core.model.MediaType.MOVIE,
-        onAction = { key, action -> action.run(key, vm::hideCategory, vm::enterCategoryMoveMode, vm::restoreCategory) },
+        onAction = { key, action -> action.run(key, vm::hideCategory, vm::enterCategoryMoveMode, vm::restoreCategory) { } },
     ) { key, opened ->
         if (listPin.takeClose(opened)) Unit
         else if (opened && categoriesOpen) { categoriesOpen = false; focusTitles(); listPin.openedFromCategories() }

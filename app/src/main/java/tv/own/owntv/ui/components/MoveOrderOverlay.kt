@@ -38,7 +38,7 @@ import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageAccent
 
 /**
- * The Move window, as Sports and leagues has it: ▲ ▼ choose a row, OK picks it up and puts it down, so
+ * The Move window: ▲ ▼ choose a row, OK picks it up and puts it down, so
  * several can move in one go, and only Save or Cancel closes it. The row being carried also goes a page
  * with the paging keys (CH± by default) and to the first or last place on a long press of them. It
  * opens with the row it was asked for already picked up. [itemNames] is the caller's order, which
@@ -90,7 +90,7 @@ fun MoveOrderOverlay(
     StagePopup(
         onDismiss = onCancel,
         title = title,
-        body = stringResource(R.string.sports_move_instructions),
+        body = stringResource(R.string.move_order_instructions),
         width = 760.mpx,
         scroll = false,
         modifier = Modifier

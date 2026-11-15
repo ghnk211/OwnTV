@@ -71,7 +71,7 @@ internal fun TopBar(
     // The clock. Rendered between two equal-weight halves so it lands on the true centre of the screen
     // whatever the channel name and guide card happen to be doing on either side of it.
     centre: (@Composable () -> Unit)? = null,
-    // Live: one more line under the channel name (a Sports match's score).
+    // Live: an optional extra line under the channel name.
     below: (@Composable () -> Unit)? = null,
 ) {
     // Reactive meta so the title row updates instantly on a channel zap (the plain vars aren't observed).
@@ -329,7 +329,6 @@ internal fun BottomBar(
     onInfo: (() -> Unit)? = null, infoOn: Boolean = false, onReport: (() -> Unit)? = null,
     favorite: Boolean = false, onToggleFavorite: (() -> Unit)? = null,
     onPreviousChannel: (() -> Unit)? = null,
-    onOtherChannels: (() -> Unit)? = null, otherChannelsCount: Int = 0,
     hasSources: Boolean = false,
     onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onAudioMode: (() -> Unit)?,
     onMultiview: (() -> Unit)? = null, onRecordThis: (() -> Unit)? = null, recordingThis: Boolean = false,
@@ -422,12 +421,6 @@ internal fun BottomBar(
                         PlayerControl.PREVIOUS_CHANNEL -> if (onPreviousChannel != null) {
                             CtrlButton(OwnTVIcon.HISTORY, label = stringResource(R.string.player_previous_channel)) { onPreviousChannel() }
                         }
-                        // Sports Hub: only for a channel started from a match.
-                        PlayerControl.OTHER_CHANNELS -> if (onOtherChannels != null) {
-                            CtrlButton(OwnTVIcon.LIST, label = stringResource(R.string.sports_other_channels_count, otherChannelsCount)) { onOtherChannels() }
-                        }
-                        // Not shown on the TV: Back from the player already returns to the match page.
-                        PlayerControl.MATCH -> Unit
                         // The same channel in another quality, category or playlist. Live only; the
                         // list is read when it opens.
                         PlayerControl.SOURCES -> if (hasSources) {
@@ -532,7 +525,7 @@ internal fun BottomBar(
                         PlayerControl.GO_LIVE, PlayerControl.VOLUME, PlayerControl.BRIGHTNESS,
                         PlayerControl.SPEED, PlayerControl.SUBTITLES, PlayerControl.AUDIO,
                         PlayerControl.FAVOURITE, PlayerControl.CATCH_UP, PlayerControl.PREVIOUS_CHANNEL,
-                        PlayerControl.OTHER_CHANNELS, PlayerControl.MATCH, PlayerControl.SOURCES, PlayerControl.CHANNEL_LIST,
+                        PlayerControl.SOURCES, PlayerControl.CHANNEL_LIST,
                         -> Unit
                     }
                 }

@@ -3,4 +3,5 @@
     <string name="content_search_channels">搜索频道…</string>
     <string name="content_search_movies">搜索电影…</string>
     <string name="content_search_series">搜索剧集…</string>
+    <string name="move_order_instructions">▲ ▼ 选择一行，按 OK 拿起或放下；保存或取消后关闭。</string>
 </resources>

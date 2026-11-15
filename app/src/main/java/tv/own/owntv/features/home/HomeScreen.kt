@@ -158,16 +158,9 @@ fun HomeScreen(
      * (A plain request on the content area drills to the nearest card instead.) Null on leaving.
      */
     onEntryHook: (((() -> Boolean)?) -> Unit)? = null,
-    /** Sports Hub: ▶ on a Live sports card opens its match page. */
-    onOpenMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = {},
     modifier: Modifier = Modifier,
-    sportsVm: tv.own.owntv.features.sports.SportsViewModel = org.koin.androidx.compose.koinViewModel(),
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
-    // Asked for only while the row is switched on (Layout → Home rows); off costs nothing.
-    val sportsCards = if (HomeRow.LIVE_SPORTS in state.config.visibleOrder) {
-        sportsVm.homeRow.collectAsStateWithLifecycle().value
-    } else emptyList()
     val trendingUnavailableMessage = stringResource(R.string.home_trending_unavailable)
     val heroPreviewEngine = koinInject<HeroPreviewEngine>()
     val engineState by heroPreviewEngine.state.collectAsStateWithLifecycle()
@@ -200,10 +193,10 @@ fun HomeScreen(
     var focusedHeroIndex by remember { mutableStateOf(-1) }
     val orderedRows = state.config.visibleOrder
     val heroVisible = HomeRow.HERO in orderedRows
-    val hasNonHeroContent = orderedRows.any { it != HomeRow.HERO && rowHasData(it, state, sportsCards.size) }
+    val hasNonHeroContent = orderedRows.any { it != HomeRow.HERO && rowHasData(it, state) }
     val showHeroFallback = heroVisible && state.heroItems.isEmpty() && !hasNonHeroContent
-    val renderRows = orderedRows.filter { rowCanRender(it, state, showHeroFallback, sportsCards.size) }
-    val firstDataRow = renderRows.firstOrNull { it != HomeRow.HERO && rowHasData(it, state, sportsCards.size) }
+    val renderRows = orderedRows.filter { rowCanRender(it, state, showHeroFallback) }
+    val firstDataRow = renderRows.firstOrNull { it != HomeRow.HERO && rowHasData(it, state) }
     val showAllHiddenState = orderedRows.isEmpty()
     val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty()
     val fullBleed = renderRows.firstOrNull() == HomeRow.TRENDING &&
@@ -554,17 +547,6 @@ fun HomeScreen(
                                 )
                             }
 
-                            HomeRow.LIVE_SPORTS -> tv.own.owntv.features.sports.LiveSportsRow(
-                                cards = sportsCards,
-                                config = sportsVm.sportsConfig.collectAsStateWithLifecycle().value,
-                                start = contentStart,
-                                onOpenMatch = onOpenMatch,
-                                onFocus = onNonHeroFocused,
-                                firstItemFocusRequester = firstItemFocusRequester,
-                                track = track,
-                                modifier = rowModifier,
-                            )
-
                             HomeRow.RECENT_CHANNELS -> HomeLiveRow(
                                 title = row.displayTitle(),
                                 mode = state.config.recentLiveMode,
@@ -706,9 +688,8 @@ fun HomeScreen(
     InAppToast(trendingToast)
 }
 
-private fun rowHasData(row: HomeRow, state: HomeUiState, sportsCards: Int): Boolean = when (row) {
+private fun rowHasData(row: HomeRow, state: HomeUiState): Boolean = when (row) {
     HomeRow.TRENDING -> state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS
-    HomeRow.LIVE_SPORTS -> sportsCards > 0
     HomeRow.HERO -> state.heroItems.isNotEmpty()
     HomeRow.RECENT_CHANNELS -> when (state.config.recentLiveMode) {
         HomeLiveRowMode.CARDS -> state.recentLive.isNotEmpty()
@@ -724,10 +705,10 @@ private fun rowHasData(row: HomeRow, state: HomeUiState, sportsCards: Int): Bool
     HomeRow.CONTINUE_SERIES -> state.continueSeries.isNotEmpty()
 }
 
-private fun rowCanRender(row: HomeRow, state: HomeUiState, showHeroFallback: Boolean, sportsCards: Int): Boolean =
+private fun rowCanRender(row: HomeRow, state: HomeUiState, showHeroFallback: Boolean): Boolean =
     when (row) {
         HomeRow.HERO -> state.heroItems.isNotEmpty() || showHeroFallback
-        else -> rowHasData(row, state, sportsCards)
+        else -> rowHasData(row, state)
     }
 
 private fun HeroItem.heroKey(): String = when (this) {
